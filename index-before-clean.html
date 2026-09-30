@@ -603,7 +603,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (!r) return;
         state.pendingDeparture = i;
         showModal(
-          `${modalTitle("Ansök om kompensation")}${journey(false)}<div class="card">${departureDetails(r)}</div><button class="primary" onclick="confirmDeparture()">Komplett ansökan ${I("arrow")}</button>`,
+          `${modalTitle("Ansök om kompensation")}${journey(false)}<div class="card">${departureDetails(r)}</div><button class="primary" onclick="confirmDeparture()">${bankFlow.identified && bankFlow.registered ? "Komplettera ansökan" : "Logga in för att ansöka om ersättning"} ${I("arrow")}</button>`,
         );
       }
       function departureDetails(r) {
@@ -625,6 +625,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       function confirmDeparture() {
         const r = demoDepartures[state.pendingDeparture];
         if (!r) return;
+        if (!bankFlow.identified || !bankFlow.registered) {
+          bankFlow.pending = "departure";
+          closeModal();
+          go("login");
+          return;
+        }
         Object.assign(state, {
           departure: { ...r },
           operator: r.operator,
@@ -640,8 +646,49 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         closeModal();
         go("ticket");
       }
+
+      function operatorFields() {
+        return ["VR", "Arlanda express", "Inlandsbanan"].includes(
+          state.operator,
+        );
+      }
+      function operatorIssue() {
+        if (
+          state.operator !== "Arlanda express" &&
+          !["single", "pass"].includes(state.ticket)
+        )
+          return "Välj biljettyp.";
+        if (
+          state.operator === "Inlandsbanan" &&
+          state.ticket === "single" &&
+          !state.ticketNumber.trim()
+        )
+          return "Ange ditt biljettnummer.";
+        if (
+          state.ticket === "pass" &&
+          state.operator !== "Arlanda express" &&
+          (!state.pass ||
+            state.pass.operator !== state.operator ||
+            state.pass.expiry < state.date)
+        )
+          return "Välj ett giltigt periodkort för operatören.";
+        if (!state.travelMode) return "Välj hur du genomförde resan.";
+        if (!state.files.length) return "Bifoga en biljettkopia.";
+        return "";
+      }
+      function operatorTicket() {
+        const noType = state.operator === "Arlanda express";
+        if (noType) state.ticket = "single";
+        return `${step(1, "Din resa och biljett", "Komplettera uppgifterna för " + state.operator + ".")}${journey()}
+          ${noType ? "" : `<div class="field"><label for="operator-ticket">Biljettyp</label><select id="operator-ticket" onchange="state.ticket=this.value;render()"><option value="">Välj biljettyp</option><option value="single" ${state.ticket === "single" ? "selected" : ""}>Enkelbiljett</option><option value="pass" ${state.ticket === "pass" ? "selected" : ""}>Periodkort</option></select></div>${state.ticket === "pass" ? passClaimCard() : state.operator === "Inlandsbanan" && state.ticket === "single" ? field("ticketNumber", "Biljettnummer", state.ticketNumber, "text", 'oninput="state.ticketNumber=this.value"') : ""}`}
+          <div class="field"><label for="travel-mode">Beskriv hur du genomförde resan</label><select id="travel-mode" onchange="state.travelMode=this.value"><option value="">Välj hur du reste</option>${["Med försenat tåg", "Ersättningstrafik", "Egen bil", "Taxi", "Annan transport"].map((x) => `<option ${state.travelMode === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+          <label class="upload">${I("upload")}<strong>Biljettkopia</strong><span class="micro muted">PDF, JPG eller PNG · högst 10 MB</span><span class="file-pick">Välj biljett</span><input aria-label="Biljettfil" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="attachTicket(this)"><span id="ticket-file">${state.files.map(esc).join(", ")}</span></label><div id="ticket-docs"></div>${error()}<div class="actions">${primary("Nästa", "ticketNext()")}</div>`;
+      }
+
       function simpleTicketFlow() {
-        return state.operator === "SJ" || !!state.departure;
+        return (
+          !operatorFields() && (state.operator === "SJ" || !!state.departure)
+        );
       }
 
       function empty() {
@@ -649,7 +696,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       function openFallback() {
         showModal(
-          `${modalTitle("Ansök om kompensation")}${journey(false)}<form onsubmit="startFallback(event)">${field("fallback-time", "Planerad avgångstid", state.manual ? state.time : "", "time", "required")}<div class="field"><label for="fallback-operator">Operatör</label><select id="fallback-operator"><option value="">Välj operatör</option><option>SJ</option><option>VR</option><option>Mälartåg</option><option>VY</option><option>Norrtåg</option><option>Västtrafik</option></select></div><p id="fallback-error" class="error" role="alert"></p><button class="primary">Ansök om kompensation ${I("arrow")}</button></form>`,
+          `${modalTitle("Ansök om kompensation")}${journey(false)}<form onsubmit="startFallback(event)">${field("fallback-time", "Planerad avgångstid", state.manual ? state.time : "", "time", "required")}<div class="field"><label for="fallback-operator">Operatör</label><select id="fallback-operator"><option value="">Välj operatör</option><option>SJ</option><option>VR</option><option>Arlanda express</option><option>Inlandsbanan</option><option>Mälartåg</option><option>VY</option><option>Norrtåg</option><option>Västtrafik</option></select></div><p id="fallback-error" class="error" role="alert"></p><button class="primary">Ansök om kompensation ${I("arrow")}</button></form>`,
         );
       }
       function startFallback(e) {
@@ -681,7 +728,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       function manual() {
-        return `${back("empty")}${head("Lägg till din resa", "Använd uppgifterna från din biljett.")}${journey()}<form onsubmit="saveManual(event)">${field("departure", "Planerad avgång", state.time, "time", "required")}<div class="field"><label for="operator">Operatör</label><select id="operator"><option>SJ</option><option>Mälartåg</option><option>VY</option><option>VR</option><option>Norrtåg</option><option>Västtrafik</option><option>Annan operatör</option></select></div><div class="field"><label for="disruption">Vad hände?</label><select id="disruption"><option value="Försenat">Tåget blev försenat</option><option value="Inställt">Tåget blev inställt</option></select></div>${field("delay", "Försening i minuter (om du vet)", "", "number", 'min="0" max="1440" inputmode="numeric"')}<button class="primary">Fortsätt till biljett ${I("arrow")}</button></form>`;
+        return `${back("empty")}${head("Lägg till din resa", "Använd uppgifterna från din biljett.")}${journey()}<form onsubmit="saveManual(event)">${field("departure", "Planerad avgång", state.time, "time", "required")}<div class="field"><label for="operator">Operatör</label><select id="operator"><option>SJ</option><option>Mälartåg</option><option>VY</option><option>VR</option><option>Arlanda express</option><option>Inlandsbanan</option><option>Norrtåg</option><option>Västtrafik</option><option>Annan operatör</option></select></div><div class="field"><label for="disruption">Vad hände?</label><select id="disruption"><option value="Försenat">Tåget blev försenat</option><option value="Inställt">Tåget blev inställt</option></select></div>${field("delay", "Försening i minuter (om du vet)", "", "number", 'min="0" max="1440" inputmode="numeric"')}<button class="primary">Fortsätt till biljett ${I("arrow")}</button></form>`;
       }
       function saveManual(e) {
         e.preventDefault();
@@ -736,6 +783,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return "";
       }
       function ticket() {
+        if (operatorFields()) return operatorTicket();
         if (simpleTicketFlow()) return sjTicket();
         if (state.manual) return fallbackTicket();
         return `${step(1, "Din biljett", "Lägg till biljetten som gäller för den här resan.")}${journey()}<label>Hur reste du?</label><div role="group" aria-label="Biljettyp"><button class="choice ${state.ticket === "single" ? "selected" : ""}" aria-pressed="${state.ticket === "single"}" onclick="captureTicket();state.ticket='single';render()"><span class="square">${I("claims")}</span><span><h3>Enkelbiljett</h3><p class="small">En biljett för den här resan</p></span><span class="radio"></span></button><button class="choice ${state.ticket === "pass" ? "selected" : ""}" aria-pressed="${state.ticket === "pass"}" onclick="captureTicket();state.ticket='pass';render()"><span class="square">${I("card")}</span><span><h3>Periodkort</h3><p class="small">Använd ett sparat kort</p></span><span class="radio"></span></button></div><div style="margin-top:23px">${state.ticket === "single" ? `${field("ticketNumber", "Boknings- eller biljettnummer", state.ticketNumber, "text", 'placeholder="Till exempel ABC123" oninput="state.ticketNumber=this.value"')}${field("price", "Biljettpris (kr)", state.price, "number", 'min="1" step="0.01" inputmode="decimal" oninput="state.price=this.value"')}<label class="upload">${I("upload")}<strong>Bifoga din biljett</strong><span class="micro muted">PDF, JPG eller PNG · högst 10 MB</span><span class="file-pick">Välj biljett</span><input aria-label="Biljettfil" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="attachTicket(this)"><span id="ticket-file" class="small">${state.files.map(esc).join(", ")}</span></label><div id="ticket-docs"></div><button class="linkbtn" onclick="state.files=['demo-biljett.pdf'];document.getElementById('ticket-file').textContent='demo-biljett.pdf';state.ticketNumber='DEMO123';document.getElementById('ticketNumber').value='DEMO123';refreshDocs()">Använd en exempelbiljett i demon</button>` : passClaimCard()}</div>${error()}<div class="actions">${primary("Fortsätt", "ticketNext()")}</div>`;
@@ -750,6 +798,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<div class="field"><label for="trip-scope">Avser ärendet</label><select id="trip-scope" onchange="state.tripScope=this.value"><option value="">Välj enkel resa eller tur och retur</option>${["Enkel resa", "Tur och retur"].map((x) => `<option ${state.tripScope === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>${field("passengers", "Antal passagerare", state.passengers || "", "number", 'min="1" step="1" inputmode="numeric" oninput="state.passengers=this.value"')}`;
       }
       function manualIssue() {
+        if (operatorFields()) return operatorIssue();
         if (!state.tripScope)
           return "Välj om ärendet avser enkel resa eller tur och retur.";
         if (
@@ -762,6 +811,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return "";
       }
       function ticketLabel(c = state) {
+        if (["VR", "Arlanda express", "Inlandsbanan"].includes(c.operator))
+          return c.ticket === "pass" ? "Periodkort" : "Enkelbiljett";
         return c.ticket === "pass"
           ? "Periodkort"
           : c.operator === "SJ" || c.departure
@@ -775,6 +826,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
               : "Enkelbiljett";
       }
       function manualSummary(c = state) {
+        if (["VR", "Arlanda express", "Inlandsbanan"].includes(c.operator))
+          return (
+            summaryRow("Genomförd resa", esc(c.travelMode || "—")) +
+            (c.ticket === "pass"
+              ? summaryRow(
+                  "Kortnummer",
+                  esc(c.passNumber || state.pass?.number || "—"),
+                )
+              : c.operator === "Inlandsbanan"
+                ? summaryRow("Biljettnummer", esc(c.ticketNumber || "—"))
+                : "")
+          );
         return c.operator === "SJ" || c.departure
           ? summaryRow(
               c.ticket === "pass" ? "Kortnummer" : "Biljettnummer",
@@ -808,6 +871,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         fail("");
       }
       function ticketNext() {
+        if (operatorFields()) {
+          captureTicket();
+          const issue = operatorIssue();
+          return issue ? fail(issue) : go("expenses");
+        }
         captureTicket();
         if (simpleTicketFlow()) {
           const issue = sjIssue();
@@ -979,6 +1047,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `${step(3, "Allt ser rätt ut?", "Kontrollera din ansökan innan du skickar den.")}${journey()}${summaryCard("Resan", "go('search')", summaryRow("Sträcka", esc(state.from) + " → " + esc(state.to)) + summaryRow("Avgång", dateText() + " · " + esc(state.time)) + summaryRow("Operatör", esc(state.operator)) + (state.departure ? summaryRow("Tågnummer", esc(state.departure.number)) + summaryRow("Planerad ankomst", state.date + " · " + state.departure.arrival) : "") + summaryRow("Försening", esc(state.delay)) + (state.manual ? summaryRow("Ansökan", "Manuell · behöver granskas") + (state.operator === "SJ" ? "" : summaryRow("Genomförd resa", esc(state.travelMode || "Saknas"))) : ""))}${summaryCard("Biljett", "go('ticket')", summaryRow("Typ", ticketLabel()) + manualSummary() + (state.ticket === "pass" ? summaryRow("Kort", esc(state.pass?.type || "Kort saknas")) : state.manual || simpleTicketFlow() ? "" : summaryRow("Biljettpris", money(state.price))))}${summaryCard("Extra utlägg", "go('expenses')", state.expenses.length ? state.expenses.map((x) => summaryRow(esc(x.type), money(x.amount))).join("") : summaryRow("Utlägg", "Inga utlägg tillagda"))}<div class="notice">${I("info")}<span>Operatören beslutar om ersättning och belopp efter granskning.</span></div><label class="checkline"><input id="confirm" type="checkbox" onchange="document.getElementById('send').disabled=!this.checked"><span>Jag har kontrollerat att uppgifterna i ansökan stämmer.</span></label>${error()}<button id="send" class="primary" disabled onclick="submitClaim()">Skicka ansökan ${I("arrow")}</button><p class="footer-note">Det här är en demo. Ingen ansökan skickas till en operatör.</p>`;
       }
       function submitClaim() {
+        if (operatorFields() && operatorIssue()) return fail(operatorIssue());
         if (simpleTicketFlow() && sjIssue()) return fail(sjIssue());
         if (state.operator !== "SJ" && state.manual && manualIssue())
           return fail(manualIssue());
@@ -999,6 +1068,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           return fail("Välj ett giltigt periodkort för operatören.");
         if (state.draftSent) return go("success");
         if (
+          !operatorFields() &&
           !simpleTicketFlow() &&
           !state.manual &&
           state.ticket === "single" &&
@@ -1699,7 +1769,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           return;
         bankFlow.pending = null;
         closeModal();
-        go(target);
+        if (target === "departure") {
+          go("results");
+          selectJourney(state.pendingDeparture);
+        } else go(target);
       }
       const bankOriginalLogin = login;
       login = function () {
@@ -1801,7 +1874,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       state.passes = [];
       state.profileSection = "personal";
       function watched() {
-        return `${head("Bevakade rutter", "Dina vanliga resor, samlade på ett ställe.")}<button class="route-fab" onclick="editRoute()" aria-label="Lägg till bevakad rutt">${I("plus")}</button><div class="notice" style="margin-top:16px">${I("bell")}<span>Välj sträcka och tid för aviseringar. Bevakning och pushnotiser är simulerade i demon.</span></div>${state.watchedRoutes.length ? state.watchedRoutes.map((r) => `<article class="card watched-card"><span class="badge">${I("train")} Bevakad rutt</span><h3>${esc(r.from)} ${I("arrow")} ${esc(r.to)}</h3><p class="small muted">${I("clock")} ${r.start}–${r.end}${r.end < r.start ? " · nästa dag" : ""}</p><div class="between"><button class="linkbtn" onclick="editRoute('${r.id}')">${I("edit")} Redigera</button><button class="linkbtn" onclick="deleteRoute('${r.id}')">Ta bort</button></div></article>`).join("") : `<div class="empty"><span class="square">${I("train")}</span><h2>Håll koll på din vardagsresa</h2><p>Lägg till din första rutt och välj när du vill få uppdateringar.</p></div>`}`;
+        return `${head("Bevakade rutter", "Dina vanliga resor, samlade på ett ställe.")}<button class="route-fab" onclick="editRoute()" aria-label="Lägg till bevakad rutt">${I("plus")}</button><div class="notice" style="margin-top:16px">${I("bell")}<span>Välj sträcka och tid för aviseringar. Bevakning och pushnotiser är simulerade i demon.</span></div>${state.watchedRoutes.length ? state.watchedRoutes.map((r) => `<article class="card watched-card"><div class="watched-heading"><span class="watched-symbol">${I("train")}</span><span class="eyebrow">BEVAKAD RUTT</span>${I("bell")}</div><h3>${esc(r.from)} ${I("arrow")} ${esc(r.to)}</h3><p class="small muted">${I("clock")} ${r.start}–${r.end}${r.end < r.start ? " · nästa dag" : ""}</p><div class="between"><button class="linkbtn" onclick="editRoute('${r.id}')">${I("edit")} Redigera</button><button class="linkbtn" onclick="deleteRoute('${r.id}')">Ta bort</button></div></article>`).join("") : `<div class="empty"><span class="square">${I("train")}</span><h2>Håll koll på din vardagsresa</h2><p>Lägg till din första rutt och välj när du vill få uppdateringar.</p></div>`}`;
       }
       function editRoute(id) {
         const r = state.watchedRoutes.find((x) => x.id === id) || {

@@ -7204,3 +7204,71 @@ html[data-classic-theme="dark"] .claim-fieldset {
 #claim-contact .claim-fieldset {
   margin-top: 16px;
 }
+
+/* Watched journeys */
+.watched-card {
+  border-radius: 22px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff, #eef5fb);
+  box-shadow: 0 6px 20px #14395708;
+}
+.watched-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: #215a87;
+}
+.watched-heading > svg {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+}
+.watched-symbol {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #dfedf7;
+  display: grid;
+  place-items: center;
+}
+.watched-symbol svg {
+  width: 20px;
+  height: 20px;
+}
+.watched-card h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  line-height: 1.6;
+}
+.watched-card h3 svg {
+  width: 18px;
+  flex-shrink: 0;
+}
+.watched-card > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.watched-card > .between {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.watched-card .linkbtn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html[data-classic-theme="dark"] .watched-card {
+  background: linear-gradient(135deg, #162235, #1c3046);
+}
+html[data-classic-theme="dark"] .watched-heading {
+  color: #b8d7ee;
+}
+html[data-classic-theme="dark"] .watched-symbol {
+  background: #29445e;
+}
