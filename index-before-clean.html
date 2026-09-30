@@ -595,7 +595,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ];
       function results() {
         if (!state.from || !state.to || !state.date) return search();
-        return `${back("search", "Ändra sökning")}${head("Välj din avgång", "1 avgång att ansöka för")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures.slice(0, 1).map((r, i) => `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`).join("")}<button class="linkbtn" onclick="openFallback()">Hittar du inte din avgång? Lägg till din resa</button><p class="footer-note">Operatören bedömer rätten till ersättning.</p>`;
+        return `${back("search", "Ändra sökning")}${head("Välj din avgång", "1 avgång att ansöka för")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures
+          .slice(0, 1)
+          .map(
+            (r, i) =>
+              `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`,
+          )
+          .join(
+            "",
+          )}<button class="linkbtn" onclick="openFallback()">Hittar du inte din avgång? Lägg till din resa</button><p class="footer-note">Operatören bedömer rätten till ersättning.</p>`;
       }
 
       function selectJourney(i) {
@@ -696,15 +704,58 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       function openFallback() {
         showModal(
-          `${modalTitle("Ansök om kompensation")}${journey(false)}<form onsubmit="startFallback(event)">${field("fallback-time", "Planerad avgångstid", state.manual ? state.time : "", "time", "required")}<div class="field"><label for="fallback-operator">Operatör</label><select id="fallback-operator"><option value="">Välj operatör</option><option>SJ</option><option>VR</option><option>Arlanda express</option><option>Inlandsbanan</option><option>Mälartåg</option><option>VY</option><option>Norrtåg</option><option>Västtrafik</option></select></div><p id="fallback-error" class="error" role="alert"></p><button class="primary">Ansök om kompensation ${I("arrow")}</button></form>`,
+          `${modalTitle("Ansök om kompensation")}${journey(false)}<form onsubmit="startFallback(event)">${field("fallback-time", "Planerad avgångstid", state.fallbackDraft?.time || (state.manual ? state.time : ""), "time", 'required onchange="updateFallbackAgreement()"')}<div class="field"><label for="fallback-operator">Operatör</label><select id="fallback-operator" onchange="updateFallbackAgreement()"><option value="">Välj operatör</option><option>SJ</option><option>VR</option><option>Arlanda express</option><option>Inlandsbanan</option><option>Mälartåg</option><option>VY</option><option>Norrtåg</option><option>Västtrafik</option></select></div><p id="fallback-error" class="error" role="alert"></p><button id="fallback-action" class="primary">Avtal att underteckna ${I("arrow")}</button></form>`,
         );
+        document.getElementById("fallback-operator").value =
+          state.fallbackDraft?.operator || (state.manual ? state.operator : "");
+        updateFallbackAgreement();
       }
+      function fallbackAgreementKey() {
+        return JSON.stringify([
+          state.from,
+          state.to,
+          state.date,
+          document.getElementById("fallback-time").value,
+          document.getElementById("fallback-operator").value,
+        ]);
+      }
+      function updateFallbackAgreement() {
+        document.getElementById("fallback-action").innerHTML =
+          (state.agreementAcknowledged === fallbackAgreementKey()
+            ? "Ansök om kompensation"
+            : "Avtal att underteckna") +
+          " " +
+          I("arrow");
+      }
+      function acknowledgeFallbackDemo() {
+        state.agreementAcknowledged = state.pendingAgreement;
+        state.agreementDocument = {
+          name: state.profile.name || "Demoanvändare",
+          date: new Date().toLocaleString("sv-SE"),
+          journey: [state.from, state.to].join(" - "),
+        };
+        state.pendingAgreement = null;
+        openFallback();
+      }
+
       function startFallback(e) {
         e.preventDefault();
         const op = document.getElementById("fallback-operator").value;
         if (!op) {
           document.getElementById("fallback-error").textContent =
             "Välj operatör för din resa.";
+          return;
+        }
+        state.fallbackDraft = {
+          operator: op,
+          time: document.getElementById("fallback-time").value,
+        };
+        const agreementKey = fallbackAgreementKey();
+        if (state.agreementAcknowledged !== agreementKey) {
+          state.pendingAgreement = agreementKey;
+          showModal(
+            `${modalTitle("Avtal att underteckna")}<div class="notice">${I("shield")}<span>Simulerad signering i demon. Inget juridiskt avtal undertecknas.</span></div><p>I den anslutna tjänsten öppnas signeringstjänsten. När avtalet är bekräftat återvänder du till Kompensa.</p><div class="actions"><button class="primary" onclick="acknowledgeFallbackDemo()">Simulera bekräftelse och återvänd ${I("check")}</button><button class="secondary" onclick="state.pendingAgreement=null;openFallback()">Avbryt</button></div>`,
+          );
           return;
         }
         state.departure = null;
@@ -1249,7 +1300,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         );
       }
       function profile() {
-        return `${head("Min profil", "Dina uppgifter, redo för nästa ansökan.")}<div class="card row"><button class="avatar customer-photo" aria-label="Ändra profilbild" onclick="editCustomerPhoto()">${customerPhotoContent()}<span class="photo-edit">${I("edit")}</span></button><div><h3>${esc(state.profile.name)}</h3><p class="small muted">${esc(state.profile.email)}</p><button class="linkbtn photo-link" onclick="editCustomerPhoto()">${state.profile.photo ? "Ändra profilbild" : "Lägg till profilbild"}</button></div></div><div class="card"><button class="listbtn" onclick="openProfile('profile')"><span class="row">${I("user")}Personuppgifter</span>${I("chevron")}</button><button class="listbtn" onclick="openProfile('profile','bank')"><span class="row">${I("wallet")}Utbetalningsuppgifter</span>${I("chevron")}</button><button class="listbtn" onclick="openClassicAppearance()"><span class="row">${I("user")}Utseende</span>${I("chevron")}</button></div><div class="card"><button class="listbtn" onclick="openHelp()"><span>Hjälp och vanliga frågor</span>${I("chevron")}</button></div><section class="card profile-legal" aria-label="Villkor och integritet"><h3>Villkor och integritet</h3><a class="listbtn" href="https://kompensa.se/generaltermsandconditions" target="_blank" rel="noopener noreferrer"><span class="row"><span class="legal-icon">${I("claims")}</span><span>Allmänna villkor<small>Villkor för Kompensas tjänst</small></span></span><span aria-hidden="true">↗</span></a><a class="listbtn" href="https://kompensa.se/integritetspolicy" target="_blank" rel="noopener noreferrer"><span class="row"><span class="legal-icon">${I("shield")}</span><span>Integritetspolicy<small>Så hanterar vi dina personuppgifter</small></span></span><span aria-hidden="true">↗</span></a><p class="micro muted legal-note">Öppnas på kompensa.se i en ny flik.</p></section><button class="secondary" onclick="go('login')">Visa inloggning</button><p class="footer-note">Kompensa · Designkoncept 2026</p>`;
+        return `${head("Min profil", "Dina uppgifter, redo för nästa ansökan.")}<div class="card row"><button class="avatar customer-photo" aria-label="Ändra profilbild" onclick="editCustomerPhoto()">${customerPhotoContent()}<span class="photo-edit">${I("edit")}</span></button><div><h3>${esc(state.profile.name)}</h3><p class="small muted">${esc(state.profile.email)}</p><button class="linkbtn photo-link" onclick="editCustomerPhoto()">${state.profile.photo ? "Ändra profilbild" : "Lägg till profilbild"}</button></div></div><div class="card"><button class="listbtn" onclick="openProfile('profile')"><span class="row">${I("user")}Personuppgifter</span>${I("chevron")}</button><button class="listbtn" onclick="openProfile('profile','bank')"><span class="row">${I("wallet")}Utbetalningsuppgifter</span>${I("chevron")}</button><button class="listbtn" onclick="openClassicAppearance()"><span class="row">${I("user")}Utseende</span>${I("chevron")}</button></div><section class="card profile-legal" aria-label="Villkor och integritet"><h3>Villkor och integritet</h3><a class="listbtn" href="https://kompensa.se/generaltermsandconditions" target="_blank" rel="noopener noreferrer"><span class="row"><span class="legal-icon">${I("claims")}</span><span>Allmänna villkor<small>Villkor för Kompensas tjänst</small></span></span><span aria-hidden="true">↗</span></a><a class="listbtn" href="https://kompensa.se/integritetspolicy" target="_blank" rel="noopener noreferrer"><span class="row"><span class="legal-icon">${I("shield")}</span><span>Integritetspolicy<small>Så hanterar vi dina personuppgifter</small></span></span><span aria-hidden="true">↗</span></a><p class="micro muted legal-note">Öppnas på kompensa.se i en ny flik.</p></section><div class="card profile-compact-row"><button class="listbtn" onclick="openHelp()"><span>Hjälp och vanliga frågor</span>${I("chevron")}</button></div><button class="secondary" onclick="go('login')">Visa inloggning</button><p class="footer-note">Kompensa · Designkoncept 2026</p>`;
       }
       function openProfile(returnTo, section = "personal") {
         let p = state.profile;
@@ -1416,6 +1467,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           detail,
           cards,
           profile,
+          information,
+          informationDetail,
           notifications,
           login,
           watched,
@@ -1991,25 +2044,40 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         const end = html.indexOf("</div>", start) + 6;
         html =
           html.slice(0, start) +
-          `<div class="profile-sections">${[
-            ["personal", "user", "Personuppgifter"],
-            ["bank", "wallet", "Bankuppgifter"],
-            ["address", "home", "Adress"],
-            ["settings", "shield", "Inställningar"],
-          ]
-            .map(
-              ([key, icon, label]) =>
-                `<button class="secondary ${state.profileSection === key ? "selected" : ""}" aria-pressed="${state.profileSection === key}" onclick="state.profileSection='${key}';render()">${I(icon)}${label}</button>`,
-            )
-            .join(
-              "",
-            )}</div><section class="profile-editor">${profileSectionForm()}</section>` +
+          `<div class="card profile-compact-row profile-account-row"><button class="listbtn" onclick="go('information')"><span class="row">${I("user")}Kontouppgifter</span>${I("chevron")}</button></div>` +
           html.slice(end);
         return html.replace(
           '<button class="secondary" onclick="go(\'login\')">Visa inloggning</button>',
-          "",
+          `<button type="button" class="secondary profile-logout" onclick="logout()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v16h5M14 8l4 4-4 4M8 12h10"/></svg>Logga ut</button>`,
         );
       };
+      function logout() {
+        bankFlow.identified = false;
+        bankFlow.pending = null;
+        bankFlow.phase = "idle";
+        bankFlow.purpose = "login";
+        state.guest = false;
+        state.pendingDeparture = null;
+        state.pendingAgreement = null;
+        closeModal();
+        go("login");
+        toast("Du har loggats ut");
+      }
+      const informationSections = [
+        ["personal", "user", "Personuppgifter", "Namn och kontaktuppgifter"],
+        ["bank", "wallet", "Bankuppgifter", "Konto för din ersättning"],
+        ["address", "home", "Adress", "Din postadress"],
+        ["settings", "shield", "Inställningar", "Fullmakt, tema och konto"],
+      ];
+      function information() {
+        return `${back("profile", "Min profil")}${head("Kontouppgifter", "Dina uppgifter, samlade på ett ställe.")}<div class="information-options">${informationSections.map(([key, icon, title, description]) => `<button class="information-option" onclick="state.profileSection='${key}';go('informationDetail')"><span class="information-symbol">${I(icon)}</span><span><strong>${title}</strong><small>${description}</small></span>${I("chevron")}</button>`).join("")}</div>`;
+      }
+      function informationDetail() {
+        const section =
+          informationSections.find((x) => x[0] === state.profileSection) ||
+          informationSections[0];
+        return `${back("information", "Kontouppgifter")}${head(section[2], section[3])}<section class="profile-editor">${profileSectionForm()}</section>`;
+      }
       function profileSectionForm() {
         const p = state.profile;
         const section = state.profileSection;
@@ -2055,7 +2123,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
               'required maxlength="12"',
             );
         if (section === "settings")
-          return `<div class="settings-list"><button class="settings-row" onclick="viewProfileAgreement()"><span class="settings-symbol">${I("claims")}</span><span><strong>Fullmakt</strong><small>${bankFlow.signed ? "Signerad i demon" : "Visa information och status"}</small></span>${I("chevron")}</button><button class="settings-row" onclick="openClassicAppearance()"><span class="settings-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13a8 8 0 0 1-9-9 8 8 0 1 0 9 9Z"/></svg></span><span><strong>Utseende</strong><small>Ljust eller mörkt tema</small></span>${I("chevron")}</button></div><div class="settings-danger"><button class="settings-row" onclick="confirmDemoAccountRemoval()"><span class="settings-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg></span><span><strong>Ta bort konto</strong><small>Radera ditt demokonto</small></span>${I("chevron")}</button><p>Dina sparade uppgifter tas bort från den här demosessionen. Inget riktigt konto påverkas.</p></div>`;
+          return `<div class="settings-list"><button class="settings-row" onclick="viewProfileAgreement()"><span class="settings-symbol">${I("claims")}</span><span><strong>Fullmakt</strong><small>${state.agreementDocument ? "Bekräftad · PDF tillgänglig" : "Visa information och status"}</small></span>${I("chevron")}</button><button class="settings-row" onclick="openClassicAppearance()"><span class="settings-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13a8 8 0 0 1-9-9 8 8 0 1 0 9 9Z"/></svg></span><span><strong>Utseende</strong><small>Ljust eller mörkt tema</small></span>${I("chevron")}</button></div><div class="settings-danger"><button class="settings-row" onclick="confirmDemoAccountRemoval()"><span class="settings-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg></span><span><strong>Ta bort konto</strong><small>Radera ditt demokonto</small></span>${I("chevron")}</button><p>Dina sparade uppgifter tas bort från den här demosessionen. Inget riktigt konto påverkas.</p></div>`;
         return `<form onsubmit="saveProfileSection(event,'${section}')"><p class="small muted">Använd exempeluppgifter i demon.</p>${body}<button class="primary">Spara ${I("check")}</button></form>`;
       }
       function saveProfileSection(e, section) {
@@ -2083,9 +2151,94 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         toast("Uppgifterna har sparats");
       }
       function viewProfileAgreement() {
+        const doc = state.agreementDocument;
         showModal(
-          `${modalTitle("Din fullmakt")}<div class="notice">${I("shield")}<span>${bankFlow.signed ? "Signerad i demon" : "Inte signerad"}</span></div><p>Fullmakten avser Kompensas hjälp med din ersättningsansökan. Detta är en simulerad förhandsvisning, inte ett juridiskt dokument.</p><button class="secondary" onclick="closeModal()">Stäng</button>`,
+          `${modalTitle("Din fullmakt")}${doc ? `<div class="notice">${I("check")}<span>Bekräftad i demon · ${esc(doc.date)}</span></div><article class="card"><div class="row">${I("claims")}<h3>Fullmakt.pdf</h3></div><p class="small muted">${esc(doc.name)}<br>${esc(doc.journey)}</p><p class="small muted">Demobekräftelse. Inte ett juridiskt undertecknat avtal.</p></article><div class="actions"><button class="primary" onclick="downloadAgreementPdf()">Ladda ner PDF ${I("arrow")}</button><button class="secondary" onclick="confirmAgreementDeletion()">Ta bort PDF</button></div>` : `<article class="card"><div class="row">${I("claims")}<h3>Fullmakt Användare</h3></div></article><button class="primary" onclick="downloadAgreementPdf(true)">Ladda ner demo-PDF ${I("arrow")}</button>`}<button class="linkbtn agreement-close" onclick="closeModal()">Stäng</button>`,
         );
+      }
+      function confirmAgreementDeletion() {
+        showModal(
+          `${modalTitle("Ta bort fullmakten?")}<p>PDF-filen och bekräftelsen tas bort från den här demosessionen. Du behöver bekräfta avtalet igen för att fortsätta en ny ansökan. En redan nedladdad fil påverkas inte.</p><div class="actions"><button class="primary" onclick="deleteAgreementDocument()">Ja, ta bort PDF</button><button class="secondary" onclick="viewProfileAgreement()">Avbryt</button></div>`,
+        );
+      }
+      function deleteAgreementDocument() {
+        state.agreementDocument = null;
+        state.agreementAcknowledged = null;
+        state.pendingAgreement = null;
+        bankFlow.signed = false;
+        render();
+        viewProfileAgreement();
+      }
+      function downloadAgreementPdf(sample = false) {
+        const doc = sample
+          ? {
+              name: "Alex Lind (exempel)",
+              date: "Ej bekräftad - exempeldokument",
+              journey: "Stockholm C - Uppsala C (exempel)",
+            }
+          : state.agreementDocument;
+        if (!doc) return;
+        // A local, single-page demo receipt. No third-party signed document is implied.
+        const hex = (value) =>
+          Array.from(value)
+            .map((c) =>
+              (c.charCodeAt(0) < 256 ? c.charCodeAt(0) : 63)
+                .toString(16)
+                .padStart(2, "0"),
+            )
+            .join("");
+        const lines = [
+          "KOMPENSA",
+          "Fullmakt - demobekräftelse",
+          "Bekräftad: " + doc.date,
+          "Namn: " + doc.name,
+          "Personnummer: 98765****",
+          "Resa: " + doc.journey,
+          "",
+          "Bekräftelsen skapades i Kompensas demonstrationsflöde.",
+          "Inget juridiskt avtal har undertecknats.",
+        ];
+        const content =
+          "BT /F1 14 Tf 50 780 Td 25 TL " +
+          lines
+            .map((line, i) => (i ? "T* " : "") + "<" + hex(line) + "> Tj")
+            .join("\n") +
+          " ET";
+        const objects = [
+          "<< /Type /Catalog /Pages 2 0 R >>",
+          "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+          "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+          "<< /Length " +
+            content.length +
+            " >>\nstream\n" +
+            content +
+            "\nendstream",
+        ];
+        let pdf = "%PDF-1.4\n",
+          offsets = [0];
+        objects.forEach((o, i) => {
+          offsets.push(pdf.length);
+          pdf += i + 1 + " 0 obj\n" + o + "\nendobj\n";
+        });
+        const xref = pdf.length;
+        pdf +=
+          "xref\n0 6\n0000000000 65535 f \n" +
+          offsets
+            .slice(1)
+            .map((n) => String(n).padStart(10, "0") + " 00000 n \n")
+            .join("") +
+          "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" +
+          xref +
+          "\n%%EOF";
+        const url = URL.createObjectURL(
+          new Blob([pdf], { type: "application/pdf" }),
+        );
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "Kompensa-fullmakt-demo.pdf";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
       function confirmDemoAccountRemoval() {
         showModal(
@@ -2093,6 +2246,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         );
       }
       function removeDemoAccount() {
+        state.agreementDocument = null;
+        state.agreementAcknowledged = null;
+        state.pendingAgreement = null;
         state.watchedRoutes = [];
         state.passes = [];
         state.pass = null;

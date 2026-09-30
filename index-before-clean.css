@@ -7272,3 +7272,78 @@ html[data-classic-theme="dark"] .watched-heading {
 html[data-classic-theme="dark"] .watched-symbol {
   background: #29445e;
 }
+
+/* Profile information navigation */
+.information-options {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+.information-option {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 14px;
+  min-height: 100px;
+  padding: 20px 16px;
+  text-align: left;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px #0c315407;
+}
+.information-symbol {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #eaf3fb;
+  color: #1c5c91;
+}
+.information-symbol svg {
+  width: 23px;
+  height: 23px;
+}
+.information-option strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.information-option small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.information-option > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.information-option:hover {
+  border-color: #83afd2;
+  background: #f5faff;
+}
+.information-option:focus-visible {
+  outline: 3px solid #2981c4;
+  outline-offset: 3px;
+}
+html[data-classic-theme="dark"] .information-option {
+  background: #162235;
+  border-color: #30435e;
+  color: #edf5ff;
+}
+html[data-classic-theme="dark"] .information-symbol {
+  background: #223951;
+  color: #aed5ff;
+}
+
+.agreement-close { display: block; margin: 12px auto 0; min-height: 44px; text-align: center; }
+
+.profile-compact-row { padding: 0 16px; margin-bottom: 12px; border-radius: 16px; }
+.profile-compact-row .listbtn { min-height: 56px; padding: 12px 0; margin: 0; font-size: 13px; }
+
+.profile-account-row .listbtn { min-height: 64px; padding: 16px 0; }
