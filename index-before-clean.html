@@ -595,7 +595,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ];
       function results() {
         if (!state.from || !state.to || !state.date) return search();
-        return `${back("search", "Ändra sökning")}${head("Välj din avgång", demoDepartures.length + " avgångar att ansöka för")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgångar för demon · inte liveuppgifter.</p>${demoDepartures.map((r, i) => `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`).join("")}<button class="linkbtn" onclick="openFallback()">Hittar du inte din avgång? Lägg till din resa</button><p class="footer-note">Operatören bedömer rätten till ersättning.</p>`;
+        return `${back("search", "Ändra sökning")}${head("Välj din avgång", "1 avgång att ansöka för")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures.slice(0, 1).map((r, i) => `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`).join("")}<button class="linkbtn" onclick="openFallback()">Hittar du inte din avgång? Lägg till din resa</button><p class="footer-note">Operatören bedömer rätten till ersättning.</p>`;
       }
 
       function selectJourney(i) {
@@ -648,7 +648,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       function operatorFields() {
-        return ["VR", "Arlanda express", "Inlandsbanan"].includes(
+        return ["VR", "Arlanda express", "Inlandsbanan", "Västtrafik"].includes(
           state.operator,
         );
       }
@@ -659,7 +659,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         )
           return "Välj biljettyp.";
         if (
-          state.operator === "Inlandsbanan" &&
+          ["Inlandsbanan", "Västtrafik"].includes(state.operator) &&
           state.ticket === "single" &&
           !state.ticketNumber.trim()
         )
@@ -680,7 +680,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         const noType = state.operator === "Arlanda express";
         if (noType) state.ticket = "single";
         return `${step(1, "Din resa och biljett", "Komplettera uppgifterna för " + state.operator + ".")}${journey()}
-          ${noType ? "" : `<div class="field"><label for="operator-ticket">Biljettyp</label><select id="operator-ticket" onchange="state.ticket=this.value;render()"><option value="">Välj biljettyp</option><option value="single" ${state.ticket === "single" ? "selected" : ""}>Enkelbiljett</option><option value="pass" ${state.ticket === "pass" ? "selected" : ""}>Periodkort</option></select></div>${state.ticket === "pass" ? passClaimCard() : state.operator === "Inlandsbanan" && state.ticket === "single" ? field("ticketNumber", "Biljettnummer", state.ticketNumber, "text", 'oninput="state.ticketNumber=this.value"') : ""}`}
+          ${noType ? "" : `<div class="field"><label for="operator-ticket">Biljettyp</label><select id="operator-ticket" onchange="state.ticket=this.value;render()"><option value="">Välj biljettyp</option><option value="single" ${state.ticket === "single" ? "selected" : ""}>Enkelbiljett</option><option value="pass" ${state.ticket === "pass" ? "selected" : ""}>Period</option></select></div>${state.ticket === "pass" ? passClaimCard() : ["Inlandsbanan", "Västtrafik"].includes(state.operator) && state.ticket === "single" ? field("ticketNumber", "Biljettnummer", state.ticketNumber, "text", 'oninput="state.ticketNumber=this.value"') : ""}`}
           <div class="field"><label for="travel-mode">Beskriv hur du genomförde resan</label><select id="travel-mode" onchange="state.travelMode=this.value"><option value="">Välj hur du reste</option>${["Med försenat tåg", "Ersättningstrafik", "Egen bil", "Taxi", "Annan transport"].map((x) => `<option ${state.travelMode === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>
           <label class="upload">${I("upload")}<strong>Biljettkopia</strong><span class="micro muted">PDF, JPG eller PNG · högst 10 MB</span><span class="file-pick">Välj biljett</span><input aria-label="Biljettfil" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="attachTicket(this)"><span id="ticket-file">${state.files.map(esc).join(", ")}</span></label><div id="ticket-docs"></div>${error()}<div class="actions">${primary("Nästa", "ticketNext()")}</div>`;
       }
@@ -811,7 +811,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return "";
       }
       function ticketLabel(c = state) {
-        if (["VR", "Arlanda express", "Inlandsbanan"].includes(c.operator))
+        if (
+          ["VR", "Arlanda express", "Inlandsbanan", "Västtrafik"].includes(
+            c.operator,
+          )
+        )
           return c.ticket === "pass" ? "Periodkort" : "Enkelbiljett";
         return c.ticket === "pass"
           ? "Periodkort"
@@ -826,7 +830,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
               : "Enkelbiljett";
       }
       function manualSummary(c = state) {
-        if (["VR", "Arlanda express", "Inlandsbanan"].includes(c.operator))
+        if (
+          ["VR", "Arlanda express", "Inlandsbanan", "Västtrafik"].includes(
+            c.operator,
+          )
+        )
           return (
             summaryRow("Genomförd resa", esc(c.travelMode || "—")) +
             (c.ticket === "pass"
@@ -834,7 +842,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
                   "Kortnummer",
                   esc(c.passNumber || state.pass?.number || "—"),
                 )
-              : c.operator === "Inlandsbanan"
+              : ["Inlandsbanan", "Västtrafik"].includes(c.operator)
                 ? summaryRow("Biljettnummer", esc(c.ticketNumber || "—"))
                 : "")
           );
