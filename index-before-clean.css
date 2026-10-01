@@ -7341,13 +7341,231 @@ html[data-classic-theme="dark"] .information-symbol {
   color: #aed5ff;
 }
 
-.agreement-close { display: block; margin: 12px auto 0; min-height: 44px; text-align: center; }
+.agreement-close {
+  display: block;
+  margin: 12px auto 0;
+  min-height: 44px;
+  text-align: center;
+}
 
-.profile-compact-row { padding: 0 16px; margin-bottom: 12px; border-radius: 16px; }
-.profile-compact-row .listbtn { min-height: 56px; padding: 12px 0; margin: 0; font-size: 13px; }
+.profile-compact-row {
+  padding: 0 16px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+}
+.profile-compact-row .listbtn {
+  min-height: 56px;
+  padding: 12px 0;
+  margin: 0;
+  font-size: 13px;
+}
 
-.profile-account-row .listbtn { min-height: 64px; padding: 16px 0; }
+.profile-account-row .listbtn {
+  min-height: 64px;
+  padding: 16px 0;
+}
 
 /* Keep the notification window and its explanation visually separated. */
-.modal .route-time-heading { margin-top: 24px; margin-bottom: 12px; line-height: 1.5; }
-.modal .route-time-fields + p { margin-top: 14px; margin-bottom: 20px; line-height: 1.6; }
+.modal .route-time-heading {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.modal .route-time-fields + p {
+  margin-top: 14px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+/* Compact no-delay search result */
+.no-delay-heading {
+  text-align: left;
+  margin: 8px 0 22px;
+}
+.no-delay-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #e4eff8;
+  color: #17578b;
+  margin-bottom: 16px;
+}
+.no-delay-icon svg {
+  width: 25px;
+  height: 25px;
+}
+.no-delay-heading .eyebrow {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+}
+.no-delay-heading h1 {
+  font-size: 26px;
+  line-height: 1.3;
+  margin: 8px 0 10px;
+  letter-spacing: -0.6px;
+}
+.no-delay-heading p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+}
+.no-delay-screen .journey {
+  margin: 0 0 18px;
+}
+.no-delay-help {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #eaf1f6;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+.no-delay-help > span {
+  flex: 0 0 18px;
+  color: #336484;
+}
+.no-delay-help svg {
+  width: 18px;
+  height: 18px;
+}
+.no-delay-help h3 {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 6px;
+}
+.no-delay-help p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0;
+}
+.no-delay-screen .actions {
+  gap: 10px;
+  margin-top: 0;
+}
+.no-delay-screen .footer-note {
+  margin-top: 14px;
+}
+html[data-classic-theme="dark"] .no-delay-icon,
+html[data-classic-theme="dark"] .no-delay-help {
+  background: #223951;
+  color: #b9dcff;
+}
+
+/* Compact agreement confirmation dialog */
+#overlay .agreement-success-modal {
+  align-items: center;
+  padding: 18px;
+}
+#overlay .agreement-success-modal .modal-box {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 26px;
+  padding: 28px 22px 22px;
+  box-shadow: 0 24px 70px #08274435;
+}
+#overlay .agreement-success-modal .modal-box::before {
+  display: none;
+}
+.agreement-success-content {
+  position: relative;
+  text-align: center;
+}
+.agreement-success-close {
+  position: absolute;
+  right: -8px;
+  top: -14px;
+}
+.agreement-success-mark {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin: 4px auto 18px;
+  border-radius: 50%;
+  background: #e4f3e8;
+  color: #23634b;
+  box-shadow: 0 0 0 7px #eff8f2;
+}
+.agreement-success-mark svg {
+  width: 28px;
+  height: 28px;
+}
+.agreement-success-content .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.agreement-success-content h2 {
+  font-size: 23px;
+  line-height: 1.3;
+  margin: 9px 0 12px;
+}
+.agreement-success-content p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0;
+}
+.agreement-success-route {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #eaf2f8;
+  border-radius: 14px;
+  padding: 13px 10px;
+  margin: 20px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.agreement-success-route svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.agreement-success-content .primary {
+  font-size: 13px;
+  min-height: 48px;
+}
+html[data-classic-theme="dark"] .agreement-success-route {
+  background: #223951;
+}
+
+.contact-summary-card .between h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.contact-summary-card h3 svg {
+  width: 19px;
+  height: 19px;
+  color: #2a648e;
+}
+.contact-summary-card .between .linkbtn {
+  min-height: 44px;
+  padding: 8px 0 8px 12px;
+}
+.postal-address {
+  display: grid;
+  gap: 5px;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.65;
+  margin-top: 12px;
+  padding: 15px 16px;
+  background: #eef5fa;
+  border-radius: 14px;
+  overflow-wrap: anywhere;
+}
+.postal-address strong {
+  font-size: 14px;
+}
+html[data-classic-theme="dark"] .postal-address {
+  background: #223951;
+}

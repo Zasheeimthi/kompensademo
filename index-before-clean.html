@@ -367,8 +367,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             "empty",
             "ticket",
             "expenses",
-            "review",
             "contact",
+            "review",
             "success",
           ];
           const backwards =
@@ -480,7 +480,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<div class="backline"><button onclick="go('${to}')">${I("back")}${label}</button><span class="micro muted">KOMPENSA</span></div>`;
       }
       function step(n, title, subtitle) {
-        return `<div class="backline"><button onclick="go('${n === 1 ? (state.manual ? "empty" : "results") : n === 2 ? "ticket" : n === 3 ? "expenses" : "review"}')">${I("back")}Tillbaka</button><span class="small muted">Steg ${n} av 4</span></div><div class="progress" aria-label="Steg ${n} av 4">${[1, 2, 3, 4].map((i) => `<i class="${i <= n ? "done" : ""}"></i>`).join("")}</div>${head(title, subtitle)}`;
+        return `<div class="backline"><button onclick="go('${n === 1 ? (state.manual ? (state.from === "Stockholm C" && state.to === "Göteborg C" ? "empty" : "results") : "results") : n === 2 ? "ticket" : n === 3 ? "expenses" : "contact"}')">${I("back")}Tillbaka</button><span class="small muted">Steg ${n} av 4</span></div><div class="progress" aria-label="Steg ${n} av 4">${[1, 2, 3, 4].map((i) => `<i class="${i <= n ? "done" : ""}"></i>`).join("")}</div>${head(title, subtitle)}`;
       }
       function journey(full = true) {
         return `<section class="journey journey-highlight" aria-label="Din resa"><div class="journey-top">${I("train")}<span>DIN RESA</span><span class="journey-tag">${full ? esc(state.operator) : "Tågresa"}</span></div><div class="journey-route"><div><span>FRÅN</span><strong>${esc(state.from)}</strong></div><div class="journey-arrow">${I("arrow")}</div><div><span>TILL</span><strong>${esc(state.to)}</strong></div></div><div class="journey-meta"><span>${I("card")}${dateText()}</span>${full ? `<span>${I("clock")}${esc(state.time)}</span>` : ""}</div>${full && state.departure ? `<div class="selected-departure"><span class="badge ${state.departure.cancelled ? "amber" : "blue"}">${state.departure.cancelled ? "Inställt" : "Försenad · +" + state.departure.delay + " min"}</span><p>Tåg ${esc(state.departure.number)} · Planerad ankomst ${esc(state.departure.arrival)}</p><p>Ankomstdatum: ${esc(state.date)}</p></div>` : ""}</section>`;
@@ -532,8 +532,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       function findJourney(e) {
         e.preventDefault();
-        const from = document.getElementById("from").value.trim(),
-          to = document.getElementById("to").value.trim(),
+        const normalizeStation = (value) =>
+          ({
+            stockholm: "Stockholm C",
+            stockhoem: "Stockholm C",
+            goteborg: "Göteborg C",
+            goteberg: "Göteborg C",
+          })[
+            value
+              .trim()
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+          ] || value.trim();
+        const from = normalizeStation(document.getElementById("from").value),
+          to = normalizeStation(document.getElementById("to").value),
           date = document.getElementById("date").value;
         if (!from || !to || !date)
           return fail("Fyll i stationer och resedatum.");
@@ -547,7 +560,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           time: "",
           manual: true,
         });
-        go("results");
+        go(
+          state.from === "Stockholm C" && state.to === "Göteborg C"
+            ? "empty"
+            : "results",
+        );
       }
 
       const demoDepartures = [
@@ -611,7 +628,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (!r) return;
         state.pendingDeparture = i;
         showModal(
-          `${modalTitle("Ansök om kompensation")}${journey(false)}<div class="card">${departureDetails(r)}</div><button class="primary" onclick="confirmDeparture()">${bankFlow.identified && bankFlow.registered ? "Komplettera ansökan" : "Logga in för att ansöka om ersättning"} ${I("arrow")}</button>`,
+          `${modalTitle("Ansök om kompensation")}${journey(false)}<div class="card">${departureDetails(r)}</div><button class="primary" onclick="confirmDeparture()">${bankFlow.identified && bankFlow.registered ? (state.agreementDocument ? "Komplettera ansökan" : "Avtal att underteckna") : "Logga in för att ansöka om ersättning"} ${I("arrow")}</button>`,
         );
       }
       function departureDetails(r) {
@@ -700,7 +717,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       function empty() {
-        return `${back("search", "Ändra sökning")}<span class="badge amber">0 avgångar kan ge ersättning</span><div class="empty"><div class="square">${I("search")}</div>${head("Ingen ersättningsbar avgång hittades", "Vi hittade inga ersättningsbara tåg på ditt valda datum. Vill du fortfarande ansöka?")}</div>${journey(false)}<div class="notice neutral">${I("info")}<span>Du kan fortsätta med en manuell ansökan. Operatören bedömer om resan ger rätt till ersättning.</span></div><div class="actions">${primary("Fortsätt till ansökan", "openFallback()")}<button class="secondary" onclick="go('search')">Ändra sökning</button></div><p class="footer-note">Demoläge: den här sökningen visar inga ersättningsbara avgångar.</p>`;
+        return `${back("search", "Ändra sökning")}<section class="no-delay-screen"><div class="no-delay-heading"><span class="no-delay-icon">${I("train")}</span><span class="eyebrow">SÖKRESULTAT</span><h1>Inga försenade tåg hittades</h1><p>Vi hittade inga försenade tåg på den här sträckan för ditt valda datum.</p></div>${journey(false)}<div class="no-delay-help"><span>${I("info")}</span><div><h3>Var din resa ändå försenad?</h3><p>Kontrollera datum och sträcka, eller lägg till resan själv för att ansöka om ersättning.</p></div></div><div class="actions"><button class="primary" onclick="openFallback()">Lägg till min resa ${I("arrow")}</button><button class="secondary" onclick="go('search')">Ändra sökning ${I("search")}</button></div><p class="footer-note">Exempelresultat i demon · inga liveuppgifter.</p></section>`;
       }
       function openFallback() {
         showModal(
@@ -727,6 +744,33 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           " " +
           I("arrow");
       }
+      function completeClaimAgreement() {
+        state.agreementDocument = {
+          name: state.profile.name,
+          date: new Date().toLocaleString("sv-SE"),
+          journey: state.from + " - " + state.to,
+        };
+        showAgreementSuccess("ticket");
+      }
+      function showAgreementSuccess(target) {
+        closeModal();
+        state.agreementDestination = target;
+        if (state.screen === "agreementSuccess") go("results");
+        showModal(agreementSuccess());
+        document
+          .querySelector(".modal")
+          .classList.add("agreement-success-modal");
+      }
+      function agreementSuccess() {
+        return `<div class="agreement-success-content"><button class="iconbtn agreement-success-close" aria-label="Stäng" onclick="closeModal()">${I("close")}</button><span class="agreement-success-mark">${I("check")}</span><span class="eyebrow">BEKRÄFTELSE</span><h2 id="modal-title">Din fullmakt är klar</h2><p>Bekräftad i demon. Din resa är sparad och du kan fortsätta med ansökan.</p><div class="agreement-success-route">${I("train")}<span>${esc(state.from)} ${I("arrow")} ${esc(state.to)}</span></div><button class="primary" onclick="continueAfterAgreement()">Ansök om kompensation ${I("arrow")}</button></div>`;
+      }
+      function continueAfterAgreement() {
+        closeModal();
+        if (state.agreementDestination === "fallback")
+          return continueFallbackApplication();
+        go("ticket");
+      }
+
       function acknowledgeFallbackDemo() {
         state.agreementAcknowledged = state.pendingAgreement;
         state.agreementDocument = {
@@ -735,7 +779,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           journey: [state.from, state.to].join(" - "),
         };
         state.pendingAgreement = null;
-        openFallback();
+        showAgreementSuccess("fallback");
       }
 
       function startFallback(e) {
@@ -758,14 +802,26 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           );
           return;
         }
-        state.departure = null;
-        state.operator = op;
-        state.time = document.getElementById("fallback-time").value;
-        state.manual = true;
-        state.delay = "Ej bekräftad";
-        state.travelMode = "";
-        state.files = [];
-        state.ticket = op === "SJ" ? "" : op === "VR" ? "pass" : "single";
+        continueFallbackApplication();
+      }
+      function continueFallbackApplication() {
+        const draft = state.fallbackDraft;
+        if (!draft?.operator || !draft?.time) return openFallback();
+        Object.assign(state, {
+          departure: null,
+          operator: draft.operator,
+          time: draft.time,
+          manual: true,
+          delay: "Ej bekräftad",
+          travelMode: "",
+          files: [],
+          ticket:
+            draft.operator === "SJ"
+              ? ""
+              : draft.operator === "VR"
+                ? "pass"
+                : "single",
+        });
         closeModal();
         go("ticket");
       }
@@ -970,7 +1026,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         go("expenses");
       }
       function expenses() {
-        return `${step(2, "Några extra utlägg?", "Om förseningen gav dig extra kostnader kan du lägga till dem här.")}${state.expenses.length ? state.expenses.map((x, i) => `<div class="card"><div class="between"><div class="row"><span class="square">${I("claims")}</span><div><h3>${esc(x.type)}</h3><span class="small muted">${x.files.length} kvitto${x.files.length > 1 ? "n" : ""}</span></div></div><strong>${money(x.amount)}</strong></div><button class="linkbtn" onclick="openExpense(${i})">Ändra utlägg / kvitton</button> · <button class="linkbtn" onclick="state.expenses.splice(${i},1);render()">Ta bort utlägg</button></div>`).join("") : `<section class="receipt-feature"><div class="receipt-art" aria-hidden="true"><span class="receipt-orbit orbit-one"></span><span class="receipt-orbit orbit-two"></span><svg class="receipt-drawing" viewBox="0 0 220 155" fill="none"><ellipse cx="111" cy="139" rx="65" ry="9" fill="#0c3553" opacity=".08"/><g transform="rotate(-12 110 80)"><rect x="59" y="20" width="87" height="113" rx="13" fill="#bdd7ea"/></g><g transform="rotate(8 110 80)"><path d="M78 15H142Q150 15 150 23V132L140 126L130 132L120 126L110 132L100 126L90 132L80 126L70 132V23Q70 15 78 15Z" fill="white" stroke="#d4e3ec"/><rect x="85" y="32" width="24" height="25" rx="7" fill="#e9f2f9"/><path d="M91 39H103M91 44H100M91 49H98" stroke="#195787" stroke-width="2" stroke-linecap="round"/><path d="M85 71H135M85 82H126M85 93H135" stroke="#ccdce8" stroke-width="3" stroke-linecap="round"/><path d="M85 109H107" stroke="#143f64" stroke-width="4" stroke-linecap="round"/><path d="M123 109H135" stroke="#143f64" stroke-width="4" stroke-linecap="round"/></g><circle cx="150" cy="112" r="22" fill="#d2f58a" stroke="white" stroke-width="5"/><path d="M141 112L147 118L160 105" stroke="#214b3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M167 34V44M162 39H172M42 97V105M38 101H46" stroke="#80a9c7" stroke-width="2" stroke-linecap="round"/><circle cx="55" cy="39" r="3" fill="#d2f58a"/></svg><span class="receipt-float receipt-food">${I("food")}</span><span class="receipt-float receipt-train">${I("train")}</span></div><div class="receipt-feature-copy"><span class="receipt-kicker">SMÅ UTGIFTER RÄKNAS OCKSÅ</span><h3>Spara dina kvitton</h3><p>Mat, boende eller en extra resa?<br>Lägg till belopp och kvitto så finns allt samlat i din ansökan.</p><div class="receipt-categories"><span>${I("food")} Mat</span><span>${I("home")} Boende</span><span>${I("train")} Transport</span></div></div></section>`}<button class="secondary" onclick="openExpense()">${I("plus")} Lägg till utlägg</button><div class="notice neutral">${I("info")}<span>Operatören bedömer vilka utlägg som kan ersättas.</span></div><div class="actions">${primary(state.expenses.length ? "Fortsätt till granskning" : "Fortsätt utan utlägg", "go('review')")}</div>`;
+        return `${step(2, "Några extra utlägg?", "Om förseningen gav dig extra kostnader kan du lägga till dem här.")}${state.expenses.length ? state.expenses.map((x, i) => `<div class="card"><div class="between"><div class="row"><span class="square">${I("claims")}</span><div><h3>${esc(x.type)}</h3><span class="small muted">${x.files.length} kvitto${x.files.length > 1 ? "n" : ""}</span></div></div><strong>${money(x.amount)}</strong></div><button class="linkbtn" onclick="openExpense(${i})">Ändra utlägg / kvitton</button> · <button class="linkbtn" onclick="state.expenses.splice(${i},1);render()">Ta bort utlägg</button></div>`).join("") : `<section class="receipt-feature"><div class="receipt-art" aria-hidden="true"><span class="receipt-orbit orbit-one"></span><span class="receipt-orbit orbit-two"></span><svg class="receipt-drawing" viewBox="0 0 220 155" fill="none"><ellipse cx="111" cy="139" rx="65" ry="9" fill="#0c3553" opacity=".08"/><g transform="rotate(-12 110 80)"><rect x="59" y="20" width="87" height="113" rx="13" fill="#bdd7ea"/></g><g transform="rotate(8 110 80)"><path d="M78 15H142Q150 15 150 23V132L140 126L130 132L120 126L110 132L100 126L90 132L80 126L70 132V23Q70 15 78 15Z" fill="white" stroke="#d4e3ec"/><rect x="85" y="32" width="24" height="25" rx="7" fill="#e9f2f9"/><path d="M91 39H103M91 44H100M91 49H98" stroke="#195787" stroke-width="2" stroke-linecap="round"/><path d="M85 71H135M85 82H126M85 93H135" stroke="#ccdce8" stroke-width="3" stroke-linecap="round"/><path d="M85 109H107" stroke="#143f64" stroke-width="4" stroke-linecap="round"/><path d="M123 109H135" stroke="#143f64" stroke-width="4" stroke-linecap="round"/></g><circle cx="150" cy="112" r="22" fill="#d2f58a" stroke="white" stroke-width="5"/><path d="M141 112L147 118L160 105" stroke="#214b3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M167 34V44M162 39H172M42 97V105M38 101H46" stroke="#80a9c7" stroke-width="2" stroke-linecap="round"/><circle cx="55" cy="39" r="3" fill="#d2f58a"/></svg><span class="receipt-float receipt-food">${I("food")}</span><span class="receipt-float receipt-train">${I("train")}</span></div><div class="receipt-feature-copy"><span class="receipt-kicker">SMÅ UTGIFTER RÄKNAS OCKSÅ</span><h3>Spara dina kvitton</h3><p>Mat, boende eller en extra resa?<br>Lägg till belopp och kvitto så finns allt samlat i din ansökan.</p><div class="receipt-categories"><span>${I("food")} Mat</span><span>${I("home")} Boende</span><span>${I("train")} Transport</span></div></div></section>`}<button class="secondary" onclick="openExpense()">${I("plus")} Lägg till utlägg</button><div class="notice neutral">${I("info")}<span>Operatören bedömer vilka utlägg som kan ersättas.</span></div><div class="actions">${primary(state.expenses.length ? "Fortsätt till bank och adress" : "Fortsätt utan utlägg", "go('contact')")}</div>`;
       }
       function money(n) {
         return (
@@ -1103,7 +1159,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<section class="card"><div class="summary-head"><h3>${title}</h3>${edit ? `<button class="linkbtn" onclick="${edit}">Ändra</button>` : ""}</div>${body}</section>`;
       }
       function review() {
-        return `${step(3, "Allt ser rätt ut?", "Kontrollera din ansökan innan du skickar den.")}${journey()}${summaryCard("Resan", "go('search')", summaryRow("Sträcka", esc(state.from) + " → " + esc(state.to)) + summaryRow("Avgång", dateText() + " · " + esc(state.time)) + summaryRow("Operatör", esc(state.operator)) + (state.departure ? summaryRow("Tågnummer", esc(state.departure.number)) + summaryRow("Planerad ankomst", state.date + " · " + state.departure.arrival) : "") + summaryRow("Försening", esc(state.delay)) + (state.manual ? summaryRow("Ansökan", "Manuell · behöver granskas") + (state.operator === "SJ" ? "" : summaryRow("Genomförd resa", esc(state.travelMode || "Saknas"))) : ""))}${summaryCard("Biljett", "go('ticket')", summaryRow("Typ", ticketLabel()) + manualSummary() + (state.ticket === "pass" ? summaryRow("Kort", esc(state.pass?.type || "Kort saknas")) : state.manual || simpleTicketFlow() ? "" : summaryRow("Biljettpris", money(state.price))))}${summaryCard("Extra utlägg", "go('expenses')", state.expenses.length ? state.expenses.map((x) => summaryRow(esc(x.type), money(x.amount))).join("") : summaryRow("Utlägg", "Inga utlägg tillagda"))}<div class="notice">${I("info")}<span>Operatören beslutar om ersättning och belopp efter granskning.</span></div><label class="checkline"><input id="confirm" type="checkbox" onchange="document.getElementById('send').disabled=!this.checked"><span>Jag har kontrollerat att uppgifterna i ansökan stämmer.</span></label>${error()}<button id="send" class="primary" disabled onclick="submitClaim()">Skicka ansökan ${I("arrow")}</button><p class="footer-note">Det här är en demo. Ingen ansökan skickas till en operatör.</p>`;
+        return `${step(4, "Allt ser rätt ut?", "Kontrollera din ansökan innan du skickar den.")}${journey()}${summaryCard("Biljett", "go('ticket')", summaryRow("Typ", ticketLabel()) + manualSummary() + (state.ticket === "pass" ? summaryRow("Kort", esc(state.pass?.type || "Kort saknas")) : state.manual || simpleTicketFlow() ? "" : summaryRow("Biljettpris", money(state.price))))}${summaryCard("Extra utlägg", "go('expenses')", state.expenses.length ? state.expenses.map((x) => summaryRow(esc(x.type), money(x.amount))).join("") : summaryRow("Utlägg", "Inga utlägg tillagda"))}<div class="notice">${I("info")}<span>Operatören beslutar om ersättning och belopp efter granskning.</span></div><label class="checkline"><input id="confirm" type="checkbox" onchange="document.getElementById('send').disabled=!this.checked"><span>Jag har kontrollerat att uppgifterna i ansökan stämmer.</span></label>${error()}<button id="send" class="primary" disabled onclick="submitClaim()">Skicka ansökan ${I("arrow")}</button><p class="footer-note">Det här är en demo. Ingen ansökan skickas till en operatör.</p>`;
       }
       function submitClaim() {
         if (operatorFields() && operatorIssue()) return fail(operatorIssue());
@@ -1399,6 +1455,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       function openHelp() {
+        state.helpReturn =
+          state.screen === "faq" ? state.helpReturn || "profile" : state.screen;
+        closeModal();
+        go("faq");
+      }
+      function faq() {
         const faqs = [
           [
             "claims",
@@ -1425,9 +1487,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             "Ha resans sträcka, datum och biljettuppgifter tillgängliga. Beroende på biljett och operatör kan du behöva bifoga en biljettkopia. Reser du med periodkort väljer du ditt sparade kort i ansökan.",
           ],
         ];
-        showModal(
-          `${modalTitle("Hjälp & vanliga frågor")}<div class="faq-intro"><span class="faq-intro-icon">${I("claims")}</span><div><p class="faq-eyebrow">VÄGLEDNING FÖR DIN RESA</p><h3>Tydliga svar. Nästa steg.</h3><p>Från ansökan till beslut om ersättning.</p></div></div><div class="faq-list">${faqs.map(([icon, category, q, answer], i) => `<details class="faq-item" ${i === 0 ? "open" : ""}><summary><span class="faq-icon">${I(icon)}</span><span class="faq-question"><span>${category}</span><strong>${q}</strong></span><span class="faq-chevron">${I("chevron")}</span></summary><div class="faq-answer"><p>${answer}</p></div></details>`).join("")}</div><p class="faq-note">${I("info")} Villkor och ersättning kan variera mellan operatörer.</p><button class="secondary" onclick="closeModal()">Tillbaka till profilen</button>`,
-        );
+        return `${back(state.helpReturn || "profile")}${head("Hjälp och vanliga frågor", "Svar på dina frågor om resan och ansökan.")}<div class="faq-intro"><span class="faq-intro-icon">${I("claims")}</span><div><p class="faq-eyebrow">VÄGLEDNING FÖR DIN RESA</p><h3>Tydliga svar. Nästa steg.</h3><p>Från ansökan till beslut om ersättning.</p></div></div><div class="faq-list">${faqs.map(([icon, category, q, answer], i) => `<details class="faq-item" ${i === 0 ? "open" : ""}><summary><span class="faq-icon">${I(icon)}</span><span class="faq-question"><span>${category}</span><strong>${q}</strong></span><span class="faq-chevron">${I("chevron")}</span></summary><div class="faq-answer"><p>${answer}</p></div></details>`).join("")}</div><p class="faq-note">${I("info")} Villkor och ersättning kan variera mellan operatörer.</p>`;
       }
 
       function openPrivacy() {
@@ -1467,8 +1527,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           detail,
           cards,
           profile,
+          agreementSuccess,
           information,
           informationDetail,
+          faq,
           notifications,
           login,
           watched,
@@ -1680,6 +1742,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           if (!bankFlow.identified) showBankID();
           else if (!bankFlow.registered) bankRegistration();
           else bankContinue();
+          return;
+        }
+        if (screen === "ticket" && !state.agreementDocument) {
+          state.agreementDestination = "ticket";
+          showModal(
+            `${modalTitle("Avtal att underteckna")}<p>Bekräfta fullmakten innan du påbörjar din ansökan.</p><p class="small muted">Simulerad signering i demon. Inget juridiskt avtal undertecknas.</p><div class="actions"><button class="primary" onclick="completeClaimAgreement()">Bekräfta i demon ${I("check")}</button><button class="secondary" onclick="closeModal()">Avbryt</button></div>`,
+          );
           return;
         }
         bankOriginalGo(screen);
@@ -2422,32 +2491,117 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         )}</fieldset></form>`;
         return details;
       }
+      function savedPayoutDetails() {
+        const p = state.profile;
+        return (
+          [
+            "holder",
+            "bank",
+            "clearing",
+            "account",
+            "street",
+            "city",
+            "country",
+            "postal",
+          ].every((k) => p[k]?.trim()) && !p.account.includes("•")
+        );
+      }
+      function claimPersonalNext(event) {
+        event.preventDefault();
+        saveProfileSection(event, "personal");
+        if (!state.profile.name.trim()) return;
+        go("contact");
+      }
       review = function () {
         const html = claimReviewBase();
+        const personal = claimDetails()
+          .split("<form")[0]
+          .replace("openProfile('review')", "editClaimPersonal()");
         return (
           html.slice(0, html.indexOf('<div class="notice">')) +
-          claimDetails().split("<form")[0] +
-          `<button class="primary" onclick="go('contact')">Nästa ${I("arrow")}</button>`
+          personal +
+          claimContactSummary() +
+          html.slice(html.indexOf('<div class="notice">'))
         );
       };
+      function editClaimPersonal() {
+        const previous = state.profileSection;
+        state.profileSection = "personal";
+        const form = profileSectionForm().replace(
+          "saveProfileSection(event,'personal')",
+          "saveClaimPersonal(event)",
+        );
+        state.profileSection = previous;
+        showModal(modalTitle("Personuppgifter") + form);
+      }
+      function saveClaimPersonal(event) {
+        if (
+          !document.getElementById("profile-first").value.trim() ||
+          !document.getElementById("profile-last").value.trim()
+        ) {
+          event.preventDefault();
+          toast("Ange för- och efternamn");
+          return;
+        }
+        saveProfileSection(event, "personal");
+        closeModal();
+      }
       function contact() {
         const details = claimDetails();
         const html = claimReviewBase();
         return (
           step(
-            4,
+            3,
             "Bank och adress",
             "Fyll i uppgifterna för din utbetalning och kontrollera din adress.",
           ) +
-          details.slice(details.indexOf("<form")) +
-          html.slice(html.indexOf('<div class="notice">'))
+          (savedPayoutDetails()
+            ? claimContactSummary()
+            : details.slice(details.indexOf("<form"))) +
+          `<button class="primary" onclick="contactNext()">Nästa ${I("arrow")}</button>`
         );
       }
 
+      function claimContactSummary() {
+        const p = state.profile;
+        const postal = (p.postal || "")
+          .replace(/\s/g, "")
+          .replace(/^(\d{3})(\d{2})$/, "$1 $2");
+        return `<article class="card contact-summary-card"><div class="between"><h3>${I("wallet")} Bankuppgifter</h3><button class="linkbtn" aria-label="Ändra bankuppgifter" onclick="editClaimContact('bank')">Ändra</button></div>${summaryRow("Kontoinnehavarens namn", esc(p.holder))}${summaryRow("Bank", esc(p.bank))}${summaryRow("Clearingnummer", esc(p.clearing))}${summaryRow("Kontonummer", "****" + esc((p.account || "").slice(-4)))}</article><article class="card contact-summary-card"><div class="between"><h3>${I("home")} Adress</h3><button class="linkbtn" aria-label="Ändra adress" onclick="editClaimContact('address')">Ändra</button></div>${summaryRow("Adress", esc(p.street || "—"))}${summaryRow("C/O (frivilligt)", esc(p.care || "—"))}${summaryRow("Postnummer", esc(postal || "—"))}${summaryRow("Ort", esc(p.city || "—"))}${summaryRow("Land", esc(p.country || "—"))}</article>`;
+      }
+      function editClaimContact(section) {
+        const previous = state.profileSection;
+        state.profileSection = section;
+        const form = profileSectionForm().replace(
+          `saveProfileSection(event,'${section}')`,
+          `saveClaimContact(event,'${section}')`,
+        );
+        state.profileSection = previous;
+        showModal(
+          modalTitle(section === "bank" ? "Bankuppgifter" : "Adress") + form,
+        );
+      }
+      function saveClaimContact(event, section) {
+        event.preventDefault();
+        if (!event.target.reportValidity()) return;
+        for (const input of event.target.querySelectorAll("input[required]")) {
+          if (!input.value.trim()) {
+            input.setCustomValidity("Fyll i uppgiften.");
+            input.reportValidity();
+            input.oninput = () => input.setCustomValidity("");
+            return;
+          }
+        }
+        saveProfileSection(event, section);
+        closeModal();
+      }
       const submitWithContact = submitClaim;
-      submitClaim = function () {
+      function contactNext() {
         const form = document.getElementById("claim-contact");
-        if (!form) return;
+        if (!form) {
+          if (savedPayoutDetails()) return go("review");
+          return;
+        }
         const invalid = Array.from(form.querySelectorAll("input")).find(
           (input) => !input.validity.valid,
         );
@@ -2487,6 +2641,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         ]
           .filter(Boolean)
           .join(", ");
+        state.editClaimContact = false;
+        go("review");
+      }
+      submitClaim = function () {
+        if (!savedPayoutDetails()) return go("contact");
         submitWithContact();
       };
 
