@@ -59,6 +59,20 @@ function update() {
           ? "#101317"
           : "#d6d9d1"),
   );
+  const steps = [...document.querySelectorAll('.process-card')];
+  const timeline = document.querySelector('.process-track');
+  if (timeline && steps.length) {
+    const positions = steps.map(step => step.getBoundingClientRect().top);
+    const readingLine = innerHeight * 0.65;
+    let progress = 0;
+    if (readingLine >= positions[positions.length - 1]) progress = 1;
+    else if (readingLine > positions[0]) {
+      const segment = positions.findIndex((top, i) => i < positions.length - 1 && readingLine < positions[i + 1]);
+      if (segment >= 0) progress = (segment + (readingLine - positions[segment]) / (positions[segment + 1] - positions[segment])) / (steps.length - 1);
+    }
+    timeline.style.setProperty('--progress', `${progress * 100}%`);
+    timeline.querySelectorAll('i').forEach((dot, i) => dot.classList.toggle('is-filled', readingLine >= positions[i]));
+  }
   ticking = false;
 }
 addEventListener(
