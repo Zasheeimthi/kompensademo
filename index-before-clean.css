@@ -7569,3 +7569,9 @@ html[data-classic-theme="dark"] .agreement-success-route {
 html[data-classic-theme="dark"] .postal-address {
   background: #223951;
 }
+.claim-attachments {list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px;}
+.claim-attachments li {display:flex;gap:10px;align-items:center;padding:12px;background:#eff5f9;border-radius:12px;font-size:12px;overflow-wrap:anywhere;}
+.claim-attachments svg {width:19px;height:19px;flex-shrink:0;}
+.attachment-heading {font-size:12px;font-weight:600;margin:18px 0 8px;color:#647f94;}
+.claim-expense + .claim-expense {margin-top:20px;padding-top:10px;border-top:1px solid #e1eaf0;}
+.summary-row strong {overflow-wrap:anywhere;min-width:0;}

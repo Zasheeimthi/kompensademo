@@ -596,7 +596,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           arrival: "11:42",
           actualDeparture: "11:47",
           actualArrival: "13:10",
-          delay: 89,
+          delay: 88,
           cancelled: false,
         },
         {
@@ -606,14 +606,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           arrival: "12:42",
           actualDeparture: "11:52",
           actualArrival: "13:48",
-          delay: 67,
+          delay: 66,
           cancelled: false,
         },
       ];
       function results() {
         if (!state.from || !state.to || !state.date) return search();
-        return `${back("search", "Ändra sökning")}${head("Välj din avgång", "1 avgång att ansöka för")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures
-          .slice(0, 1)
+        return `${back("search", "Ändra sökning")}${head("Välj din avgång", `${demoDepartures.length} avgångar · inställda och försenade`)}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures
           .map(
             (r, i) =>
               `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`,
@@ -1215,6 +1214,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             passengers: state.passengers,
             ticketNumber: state.ticketNumber,
             passNumber: state.pass?.number,
+            pass: state.pass,
+            profile: state.profile,
+            files: state.files,
+            submittedAt: new Date().toISOString().slice(0,10),
             departure: state.departure,
           }),
         );
@@ -1236,7 +1239,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<button class="card clickable" onclick="state.detail='${type}';go('detail')"><div class="between"><span class="badge ${isPaid ? "green" : isNew ? "blue" : "amber"}">${isPaid ? "Utbetald" : isNew ? "Registrerad" : "Hos operatören"}</span><span class="micro muted">${isNew ? "24" : isPaid ? "12" : "18"} sep</span></div><div class="route-title">${esc(c.from)} ${I("arrow")} ${esc(c.to)}</div><div class="between small"><span class="muted">${esc(c.operator)} · #K-${isNew ? "1043" : isPaid ? "1028" : "1042"}</span>${isPaid ? "<strong>85 kr</strong>" : I("chevron")}</div></button>`;
       }
       function cases() {
-        return `${head("Mina ärenden", "Följ din ansökan hela vägen.")}<div class="tabs" role="group" aria-label="Ärendefilter"><button class="${state.filter === "active" ? "active" : ""}" onclick="state.filter='active';render()">Pågående (${state.submitted ? 1 : 0})</button><button class="${state.filter === "paid" ? "active" : ""}" onclick="state.filter='paid';render()">Avslutade (1)</button></div>${state.filter === "paid" ? '<p class="small muted">Exempelärende för demonstrationen.</p>' + claimCard("paid") : state.submitted ? claimCard("new") : `<div class="empty"><div class="square">${I("claims")}</div><h2>${state.filter === "paid" ? "Inga avslutade ärenden" : "Inga ärenden ännu"}</h2><p>Här ser du dina ansökningar när du har skickat dem.</p></div>`}`;
+        return `${head("Mina ärenden", "Följ din ansökan hela vägen.")}<div class="tabs" role="group" aria-label="Ärendefilter"><button class="${state.filter === "active" ? "active" : ""}" onclick="state.filter='active';render()">Pågående (${state.submitted ? 2 : 1})</button><button class="${state.filter === "paid" ? "active" : ""}" onclick="state.filter='paid';render()">Avslutade (1)</button></div><p class="small muted">Exempelärenden för demonstrationen.</p>${state.filter === "paid" ? claimCard("paid") : (state.submitted ? claimCard("new") : "") + claimCard("active")}`;
       }
 
       function newJourney() {
@@ -1246,21 +1249,42 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         state.expenses = [];
         go("search");
       }
+      function demoClaimRecord(paid) {
+        return {
+          from: "Stockholm C", to: paid ? "Västerås C" : "Uppsala C",
+          operator: "Mälartåg", date: "2026-09-18", time: "08:12",
+          ticket: paid ? "pass" : "single", ticketNumber: "DEMO-234543", price: "240",
+          pass: {type:"Movingo i Mälardalstrafiks app", number:"DEMO-BTM2VX6PC", expiry:"2026-10-06", operator:"Mälartåg"},
+          travelMode:"Nästa tillgängliga tåg", files:["Biljett-demo.pdf"],
+          departure: {number:218, departure:"08:12", arrival:"09:10", actualArrival:"10:16", delay:66, cancelled:false},
+          profile: {name:"Alex Lind", email:"alex.lind@example.com", phone:"070 123 45 67", personalNumber:"98765****", holder:"Alex Lind", bank:"Swedbank", clearing:"8327", account:"•••• 4821", street:"Storgatan 12", care:"", postal:"111 22", city:"Stockholm", country:"Sverige"},
+          expenses: paid ? [] : [{type:"Mat",amount:95,files:["Matkvitto-demo.pdf"]},{type:"Taxi",amount:210,files:["Taxikvitto-demo.pdf"]}],
+          submittedAt:"2026-09-18"
+        };
+      }
       function detail() {
-        const isNew = state.detail === "new" && state.claim,
-          isPaid = state.detail === "paid",
-          c = isNew
-            ? state.claim
-            : {
-                from: "Stockholm C",
-                to: isPaid ? "Västerås C" : "Uppsala C",
-                operator: "Mälartåg",
-                time: "08:12",
-                date: "2026-09-18",
-                ticket: "pass",
-                expenses: [],
-              };
-        return `${back("cases", "Mina ärenden")}<div class="between" style="margin-bottom:12px"><span class="eyebrow muted">Ärende #K-${isNew ? "1043" : isPaid ? "1028" : "1042"}</span><span class="badge ${isPaid ? "green" : isNew ? "blue" : "amber"}">${isPaid ? "Utbetald" : isNew ? "Registrerad" : "Hos operatören"}</span></div>${head(esc(c.from) + "<br>→ " + esc(c.to), esc(c.operator) + " · " + esc(c.date) + " · " + esc(c.time))}${isPaid ? '<div class="hero"><p>Utbetald ersättning</p><h2>85 kr</h2><p>Utbetalad till konto •••• 4821</p></div>' : ""}<div class="card"><h3 style="margin-bottom:24px">Det här händer med ditt ärende</h3><div class="timeline"><div class="milestone complete"><span class="dot"></span><h3>Ansökan registrerad</h3><p>${isNew ? "24" : "18"} september · Uppgifterna är mottagna.</p></div><div class="milestone ${isNew ? "" : "complete"}"><span class="dot"></span><h3>Skickad till operatören</h3><p>${isNew ? "Nästa steg i processen." : "18 september · " + esc(c.operator) + " har fått ansökan."}</p></div><div class="milestone ${isPaid ? "complete" : isNew ? "" : "current"}"><span class="dot"></span><h3>${isPaid ? "Ansökan godkänd" : isNew ? "Operatörens granskning" : "Granskning pågår"}</h3><p>${isPaid ? "Operatören har godkänt ersättningen." : "Handläggningstiden varierar mellan operatörer."}</p></div><div class="milestone ${isPaid ? "complete" : ""}"><span class="dot"></span><h3>${isPaid ? "Ersättning utbetald" : "Beslut och eventuell utbetalning"}</h3><p>${isPaid ? "85 kr har betalats ut." : "Du får besked när operatören har fattat beslut."}</p></div></div></div>${summaryCard("Ansökningsuppgifter", "", summaryRow("Biljett", ticketLabel(c)) + manualSummary(c) + (c.departure ? summaryRow("Tågnummer", esc(c.departure.number)) + summaryRow("Status", c.departure.cancelled ? "Inställt" : "Försenad") + summaryRow("Planerad ankomst", c.date + " · " + c.departure.arrival) : "") + (c.manual ? summaryRow("Ansökan", "Manuell") + (c.operator === "SJ" ? "" : summaryRow("Genomförd resa", esc(c.travelMode))) : "") + summaryRow("Utlägg", c.expenses.length ? money(c.expenses.reduce((a, x) => a + x.amount, 0)) : "Inga utlägg"))}<button class="secondary" onclick="openHelp()">Hjälp med mitt ärende ${I("info")}</button>`;
+        const paid = state.detail === "paid";
+        const fresh = state.detail === "new" && state.claim;
+        const c = fresh ? state.claim : demoClaimRecord(paid);
+        const p = c.profile || {};
+        const row = (label,value) => summaryRow(label,esc(value || "Ej angivet"));
+        const card = (title,body) => summaryCard(title,"",body);
+        const d = c.departure || {};
+        const files = list => (list || []).length ? `<ul class="claim-attachments">${list.map(f=>`<li>${I("claims")}<span>${esc(typeof f === "string" ? f : f.name)}</span></li>`).join("")}</ul>` : '<p class="small muted">Inga bilagor tillagda.</p>';
+        const ticket = c.ticket === "pass"
+          ? row("Periodkortstyp",c.pass?.type) + row("Periodkortsnummer",c.pass?.number || c.passNumber) + row("Giltigt till",c.pass?.expiry) + row("Operatör",c.pass?.operator || c.operator)
+          : row("Biljettyp",ticketLabel(c)) + row("Biljettnummer",c.ticketNumber) + summaryRow("Biljettpris",money(c.price || 0));
+        const expenseTotal = (c.expenses || []).reduce((sum,x)=>sum+Number(x.amount || 0),0);
+        return `${back("cases","Mina ärenden")}<div class="between"><span class="eyebrow muted">Ärende #K-${fresh ? "1043" : paid ? "1028" : "1042"}</span><span class="badge ${paid ? "green" : "amber"}">${paid ? "Avslutat · utbetalt" : "Pågår"}</span></div>${head("Ersättningsinformation",esc(c.from)+" → "+esc(c.to))}
+        ${paid ? '<div class="hero"><p>Utbetald ersättning</p><h2>85 kr</h2><p>Utbetalt till konto •••• 4821</p></div>' : `<div class="notice">${I("clock")}<span>${fresh ? "Ansökan är registrerad. Nästa steg är operatörens granskning." : "Operatören granskar din ansökan. Du får besked när ett beslut har fattats."}</span></div>`}
+        ${card(c.ticket === "pass" ? "Periodkort" : "Biljett",ticket + row("Så genomfördes resan",c.travelMode) + '<h4 class="attachment-heading">Biljettkopia</h4>' + files(c.files))}
+        ${card("Tåginformation",row("Avresestation",c.from)+row("Ankomststation",c.to)+row("Avresedatum",c.date)+row("Tågnummer",d.number)+row("Planerad avgångstid",d.departure || c.time)+row("Planerad ankomsttid",d.arrival)+row("Operatör",c.operator)+row("Tågstatus",d.cancelled ? "Inställt" : d.delay ? "Försenat · "+d.delay+" min" : "Manuellt tillagd resa")+(d.actualDeparture ? row("Faktisk avgångstid",d.actualDeparture) : "")+(d.actualArrival ? row("Faktisk ankomsttid",d.actualArrival) : ""))}
+        ${card("Personuppgifter",row("Förnamn",(p.name || "").split(" ")[0])+row("Efternamn",(p.name || "").split(" ").slice(1).join(" "))+row("E-postadress",p.email)+row("Mobilnummer",p.phone)+row("Personnummer",p.personalNumber || "98765****"))}
+        ${card("Bankuppgifter",row("Kontoinnehavarens namn",p.holder || p.name)+row("Bank",p.bank)+row("Clearingnummer",p.clearing)+row("Kontonummer",p.account ? "•••• "+p.account.replace(/[^0-9]/g,"").slice(-4) : "Ej angivet"))}
+        ${card("Adress",row("Gatuadress",p.street || p.address)+row("C/o",p.care || "—")+row("Postnummer",p.postal)+row("Ort",p.city)+row("Land",p.country))}
+        ${card("Egna utlägg",(c.expenses || []).length ? c.expenses.map(x=>`<div class="claim-expense">${summaryRow(esc(x.type),money(x.amount))}<h4 class="attachment-heading">Kvitton</h4>${files(x.files)}</div>`).join("")+summaryRow("Totalt begärt för utlägg",money(expenseTotal)) : '<p class="small muted">Inga egna utlägg i den här ansökan.</p>')}
+        ${card("Ärendestatus",row("Registrerad",c.submittedAt)+row("Status",paid ? "Avslutat – ersättning utbetald" : fresh ? "Registrerad" : "Granskning pågår"))}
+        <button class="secondary" onclick="openHelp()">Hjälp med mitt ärende ${I("info")}</button><p class="footer-note">Demoärende · bilagorna visas som filnamn i prototypen.</p>`;
       }
       function travelPassCard(p = state.pass) {
         return `<section class="travel-pass" aria-label="Sparat periodkort"><div class="travel-pass-top"><span class="operator-seal">${I("train")}</span><div><strong>${esc(p.operator)}</strong><span class="pass-caption">DITT PERIODKORT</span></div><span class="pass-status">${I("check")} Sparat</span></div><div class="travel-pass-body"><span class="pass-caption">RES MER. FYLL I MINDRE.</span><h2>${esc(p.type)}</h2><div class="pass-number-line">${I("card")}<span>${esc(p.number)}</span></div></div><svg class="pass-landscape" viewBox="0 0 360 84" fill="none" aria-hidden="true"><path d="M0 73L45 47L83 61L125 29L180 62L235 35L289 60L330 39L360 59V84H0Z" fill="#ffffff" opacity=".05"/><path d="M0 74H360M0 81H360" stroke="#9cc4e5" stroke-opacity=".3"/><path d="M145 40H288C310 40 324 52 336 68H145Z" fill="#dcecf7"/><path d="M155 46H181V58H155ZM187 46H213V58H187ZM219 46H245V58H219ZM251 46H277V58H251ZM284 46H294C304 46 313 51 319 58H284Z" fill="#41769b"/><path d="M146 63H328" stroke="#b5de83" stroke-width="3"/><circle cx="170" cy="70" r="4" fill="#a6bfd2"/><circle cx="302" cy="70" r="4" fill="#a6bfd2"/><path d="M126 49H108M126 57H92M126 65H114" stroke="#b9d6e9" stroke-opacity=".5" stroke-linecap="round"/></svg><div class="travel-pass-bottom"><span class="expiry-icon">${I("clock")}</span><div><span class="pass-caption">GILTIGT TILL</span><strong>${esc(p.expiry)}</strong></div><span class="pass-ticket-icon">${I("claims")}</span></div></section>`;
