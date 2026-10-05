@@ -32,8 +32,21 @@ words.replaceChildren(
 const sequence = document.querySelector(".benefit-scroll");
 const track = document.querySelector(".benefit-track");
 let ticking = false;
+let previousScroll = scrollY;
 function update() {
   header.classList.toggle("compact", scrollY > 120);
+  const delta = scrollY - previousScroll;
+  if (Math.abs(delta) > 4) {
+    header.classList.toggle(
+      "mobile-hidden",
+      mobile.matches &&
+        delta > 0 &&
+        scrollY > 180 &&
+        !header.classList.contains("menu-open"),
+    );
+    previousScroll = scrollY;
+  }
+  if (!mobile.matches || scrollY < 80) header.classList.remove("mobile-hidden");
   const wr = words.getBoundingClientRect();
   const reveal = Math.max(
     0,
@@ -127,25 +140,47 @@ const category = document.querySelector(".rotating-category");
 const categories = ["din vardagsresa", "din helgresa", "ditt periodkort"];
 const panels = [...document.querySelectorAll(".screen-panel")];
 let current = 0,
-  rotation;
+  rotation,
+  screenAnimation;
+const screen = document.querySelector(".device-screen");
+function animatePanel() {
+  screenAnimation?.cancel();
+  panels.forEach((p, i) => {
+    p.classList.toggle("active", i === current);
+    p.setAttribute("aria-hidden", String(i !== current));
+  });
+  const panel = panels[current];
+  const distance = Math.max(0, panel.scrollHeight - screen.clientHeight);
+  if (!motion.matches && distance > 0) {
+    screenAnimation = panel.animate(
+      [
+        { transform: "translateY(0)", offset: 0 },
+        { transform: "translateY(0)", offset: 0.18 },
+        { transform: `translateY(-${distance}px)`, offset: 0.8 },
+        { transform: `translateY(-${distance}px)`, offset: 1 },
+      ],
+      { duration: 5600, easing: "ease-in-out", fill: "forwards" },
+    );
+  }
+}
 function setupRotation() {
   clearInterval(rotation);
+  animatePanel();
   if (motion.matches) return;
   rotation = setInterval(() => {
     if (document.hidden) return;
-    current = (current + 1) % categories.length;
-    category.classList.add("changing");
-    setTimeout(() => {
-      category.textContent = categories[current];
-      category.classList.remove("changing");
-    }, 250);
-    panels.forEach((p, i) => {
-      p.classList.toggle("active", i === current);
-      p.setAttribute("aria-hidden", String(i !== current));
-    });
-  }, 3000);
+    current = (current + 1) % panels.length;
+    category.textContent = categories[current];
+    animatePanel();
+  }, 6400);
 }
-panels.forEach((p, i) => p.setAttribute("aria-hidden", String(i !== 0)));
+let previewWidth = innerWidth;
+addEventListener("resize", () => {
+  if (innerWidth === previewWidth) return;
+  previewWidth = innerWidth;
+  setupRotation();
+});
+document.fonts.ready.then(setupRotation);
 motion.addEventListener("change", () => {
   paused = motion.matches;
   pauseLabel();
@@ -155,3 +190,31 @@ motion.addEventListener("change", () => {
 mobile.addEventListener("change", update);
 setupRotation();
 update();
+
+const journeyForm = document.querySelector("#journey-search-form");
+const journeyFrom = document.querySelector("#journey-from");
+const journeyTo = document.querySelector("#journey-to");
+const journeyDate = document.querySelector("#journey-date");
+const today = new Date();
+journeyDate.max = [
+  today.getFullYear(),
+  String(today.getMonth() + 1).padStart(2, "0"),
+  String(today.getDate()).padStart(2, "0"),
+].join("-");
+document.querySelector(".station-swap").addEventListener("click", () => {
+  [journeyFrom.value, journeyTo.value] = [journeyTo.value, journeyFrom.value];
+  journeyTo.setCustomValidity("");
+});
+[journeyFrom, journeyTo].forEach((input) =>
+  input.addEventListener("input", () => journeyTo.setCustomValidity("")),
+);
+journeyForm.addEventListener("submit", (e) => {
+  if (
+    journeyFrom.value.trim().toLocaleLowerCase("sv") ===
+    journeyTo.value.trim().toLocaleLowerCase("sv")
+  ) {
+    e.preventDefault();
+    journeyTo.setCustomValidity("Välj två olika stationer.");
+    journeyTo.reportValidity();
+  }
+});

@@ -2649,6 +2649,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         submitWithContact();
       };
 
+      // Carry the landing-page journey into the existing demo search flow.
+      const landingJourney = new URLSearchParams(location.search);
+      const landingFrom = (landingJourney.get("from") || "").trim().slice(0, 100);
+      const landingTo = (landingJourney.get("to") || "").trim().slice(0, 100);
+      const landingDate = landingJourney.get("date") || "";
+      if (landingFrom && landingTo && /^\d{4}-\d{2}-\d{2}$/.test(landingDate)) {
+        Object.assign(state, { from: landingFrom, to: landingTo, date: landingDate,
+          screen: landingFrom === "Stockholm C" && landingTo === "Göteborg C" ? "empty" : "results", departure: null, time: "", manual: true });
+      }
       render();
     </script>
   </body>
