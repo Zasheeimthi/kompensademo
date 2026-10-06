@@ -7576,17 +7576,19 @@ html[data-classic-theme="dark"] .postal-address {
 .claim-expense + .claim-expense {margin-top:20px;padding-top:10px;border-top:1px solid #e1eaf0;}
 .summary-row strong {overflow-wrap:anywhere;min-width:0;}
 /* Readable train and arrival details without repeating the journey date. */
-.journey-highlight .selected-departure {margin-top:14px;padding-top:14px;border-top:1px solid #ffffff20;}
-.journey-service {display:grid;grid-template-columns:1fr 1.25fr;gap:16px;margin-top:14px;padding:15px 16px;background:#ffffff0e;border:1px solid #ffffff20;border-radius:15px;}
-.journey-service > div {display:flex;flex-direction:column;gap:9px;min-width:0;}
-.journey-service > div + div {border-left:1px solid #ffffff25;padding-left:16px;}
+:is(#view, #overlay) .journey-highlight.journey-has-departure {padding:16px;border-radius:22px;}
+:is(#view, #overlay) .journey-highlight.journey-has-departure .journey-top {margin-bottom:10px;}
+:is(#view, #overlay) .journey-highlight.journey-has-departure .journey-meta {justify-content:space-between;align-items:center;gap:8px;margin-top:9px;padding-top:8px;}
+:is(#view, #overlay) .journey-highlight .selected-departure {margin-top:8px;}
+:is(#view, #overlay) .journey-delay {padding:4px 8px;font-size:10px;line-height:1.35;white-space:nowrap;}
+.journey-service {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin-top:0;padding:10px 12px;background:#ffffff12;border:1px solid #ffffff30;border-radius:14px;}
+.journey-service > div {display:flex;flex-direction:column;gap:5px;min-width:0;}
+.journey-service .journey-service-train {grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding-bottom:7px;border-bottom:1px solid #ffffff25;}
+.journey-service > div:nth-child(3) {border-left:1px solid #ffffff25;padding-left:12px;}
 .journey-service-label {font-size:10px;line-height:1.5;color:#c5dced;}
-.journey-service strong {display:flex;align-items:center;gap:7px;font-size:20px;line-height:1.2;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;}
+.journey-service strong {display:flex;align-items:center;gap:7px;font-size:21px;line-height:1.2;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;}
 .journey-service strong svg {width:18px;height:18px;color:#d4ee9f;}
-.journey-service > div:last-child strong {color:#d4ee9f;}
-.claim-status-bar {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;}
-.claim-status-bar .badge,.claim-status-bar .linkbtn {display:inline-flex;align-items:center;gap:6px;font-size:11px;}
-.claim-status-bar svg {width:16px;height:16px;}
+.journey-service .journey-service-actual strong {color:#d4ee9f;}
 .claim-section-icon {display:grid;place-items:center;width:35px;height:35px;border-radius:11px;background:#edf4f9;color:#285d86;flex-shrink:0;}
 .claim-section-icon svg {width:19px;height:19px;}
 .claim-info-card .summary-head {margin-bottom:18px;}
