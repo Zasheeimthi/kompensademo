@@ -1600,12 +1600,7 @@ body {
 }
 /* Direct section navigation, with room for the floating header. */
 html {
-  scroll-behavior: smooth;
-}
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  scroll-behavior: auto;
 }
 main > section[id] {
   scroll-margin-top: 112px;

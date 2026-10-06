@@ -7575,3 +7575,55 @@ html[data-classic-theme="dark"] .postal-address {
 .attachment-heading {font-size:12px;font-weight:600;margin:18px 0 8px;color:#647f94;}
 .claim-expense + .claim-expense {margin-top:20px;padding-top:10px;border-top:1px solid #e1eaf0;}
 .summary-row strong {overflow-wrap:anywhere;min-width:0;}
+/* Readable train and arrival details without repeating the journey date. */
+.journey-highlight .selected-departure {margin-top:14px;padding-top:14px;border-top:1px solid #ffffff20;}
+.journey-service {display:grid;grid-template-columns:1fr 1.25fr;gap:16px;margin-top:14px;padding:15px 16px;background:#ffffff0e;border:1px solid #ffffff20;border-radius:15px;}
+.journey-service > div {display:flex;flex-direction:column;gap:9px;min-width:0;}
+.journey-service > div + div {border-left:1px solid #ffffff25;padding-left:16px;}
+.journey-service-label {font-size:10px;line-height:1.5;color:#c5dced;}
+.journey-service strong {display:flex;align-items:center;gap:7px;font-size:20px;line-height:1.2;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;}
+.journey-service strong svg {width:18px;height:18px;color:#d4ee9f;}
+.journey-service > div:last-child strong {color:#d4ee9f;}
+.claim-status-bar {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;}
+.claim-status-bar .badge,.claim-status-bar .linkbtn {display:inline-flex;align-items:center;gap:6px;font-size:11px;}
+.claim-status-bar svg {width:16px;height:16px;}
+.claim-section-icon {display:grid;place-items:center;width:35px;height:35px;border-radius:11px;background:#edf4f9;color:#285d86;flex-shrink:0;}
+.claim-section-icon svg {width:19px;height:19px;}
+.claim-info-card .summary-head {margin-bottom:18px;}
+.claim-info-card h3 {gap:10px;font-size:15px;}
+.claim-list-card .row > svg {width:20px;height:20px;color:#37698d;}
+
+/* Clear grouping for claim documents and expense receipts. */
+.ticket-document {margin-top:18px;padding-top:16px;border-top:1px solid #e4edf3;}
+.claim-attachments {margin:0;gap:8px;}
+.claim-attachments li {padding:12px;gap:10px;border:1px solid #e3ebf1;background:#f8fafc;border-radius:13px;}
+.attachment-file-icon {display:grid;place-items:center;width:32px;height:38px;flex-shrink:0;background:white;border:1px solid #dce6ef;border-radius:7px;color:#417699;}
+.attachment-copy {display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;}
+.attachment-copy strong {font-size:12px;font-weight:700;color:#143c5b;}
+.attachment-copy small {font-size:10px;line-height:1.5;color:#6c8192;overflow-wrap:anywhere;}
+.attachment-format {font-size:9px;letter-spacing:.04em;color:#678296;flex-shrink:0;}
+.claim-expense {padding:14px;border:1px solid #e1eaf1;border-radius:16px;background:#fff;}
+.claim-expense + .claim-expense {margin-top:12px;padding-top:14px;border-top:1px solid #e1eaf1;}
+.expense-item-heading {display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;font-size:14px;color:#143c5b;}
+.expense-item-heading strong:last-child {white-space:nowrap;}
+.claim-expense .claim-attachments li {border:0;padding:10px;background:#f3f7fa;border-radius:10px;}
+.expense-total.summary-row {margin-top:16px;border:0;border-radius:13px;padding:16px;background:#edf5e4;align-items:center;color:#25452f;}
+.expense-total.summary-row>span {color:#25452f;font-weight:700;font-size:13px;}
+.expense-total small {display:block;margin-top:5px;font-size:10px;font-weight:400;color:#6b806c;}
+.expense-total.summary-row>strong {font-size:20px;font-weight:700;white-space:nowrap;}
+.attachment-empty {font-size:11px;color:#75899a;margin:0;}
+.claim-info-card .expense-total.summary-row {padding:16px !important;} 
+
+/* Ongoing claim: scan ticket and completed journey together. */
+.ticket-overview-grid {display:grid;grid-template-columns:1fr 1fr;gap:18px 14px;}
+.claim-info-card .ticket-overview-grid .summary-row {display:flex;flex-direction:column;align-items:flex-start;gap:7px;border:0;padding:0!important;min-width:0;}
+.ticket-overview-grid .summary-row>span {font-size:11px;color:#72899a;}
+.ticket-overview-grid .summary-row>strong {font-size:13px;text-align:left;max-width:100%;overflow-wrap:anywhere;}
+.ticket-overview-grid .journey-method {grid-column:1/-1;background:#f2f6fa;border-radius:12px;padding:12px!important;}
+.ongoing-ticket-summary .ticket-document {margin-top:16px;padding-top:0;border:0;}
+.claim-info-card .ticket-overview-grid .summary-row.journey-method {padding:12px !important;}
+
+.claim-info-card .ticket-overview-grid .summary-row.journey-method {padding:14px 16px!important;gap:8px;min-height:72px;justify-content:center;box-sizing:border-box;}
+.claim-info-card .submitted-ticket-number.summary-row {display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:4px 0!important;border:0;}
+.claim-info-card .submitted-ticket-number>span {font-size:12px;}
+.claim-info-card .submitted-ticket-number>strong {font-size:16px;text-align:left;max-width:100%;overflow-wrap:anywhere;}

@@ -483,7 +483,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<div class="backline"><button onclick="go('${n === 1 ? (state.manual ? (state.from === "Stockholm C" && state.to === "Göteborg C" ? "empty" : "results") : "results") : n === 2 ? "ticket" : n === 3 ? "expenses" : "contact"}')">${I("back")}Tillbaka</button><span class="small muted">Steg ${n} av 4</span></div><div class="progress" aria-label="Steg ${n} av 4">${[1, 2, 3, 4].map((i) => `<i class="${i <= n ? "done" : ""}"></i>`).join("")}</div>${head(title, subtitle)}`;
       }
       function journey(full = true) {
-        return `<section class="journey journey-highlight" aria-label="Din resa"><div class="journey-top">${I("train")}<span>DIN RESA</span><span class="journey-tag">${full ? esc(state.operator) : "Tågresa"}</span></div><div class="journey-route"><div><span>FRÅN</span><strong>${esc(state.from)}</strong></div><div class="journey-arrow">${I("arrow")}</div><div><span>TILL</span><strong>${esc(state.to)}</strong></div></div><div class="journey-meta"><span>${I("card")}${dateText()}</span>${full ? `<span>${I("clock")}${esc(state.time)}</span>` : ""}</div>${full && state.departure ? `<div class="selected-departure"><span class="badge ${state.departure.cancelled ? "amber" : "blue"}">${state.departure.cancelled ? "Inställt" : "Försenad · +" + state.departure.delay + " min"}</span><p>Tåg ${esc(state.departure.number)} · Planerad ankomst ${esc(state.departure.arrival)}</p><p>Ankomstdatum: ${esc(state.date)}</p></div>` : ""}</section>`;
+        return `<section class="journey journey-highlight" aria-label="Din resa"><div class="journey-top">${I("train")}<span>DIN RESA</span><span class="journey-tag">${full ? esc(state.operator) : "Tågresa"}</span></div><div class="journey-route"><div><span>FRÅN</span><strong>${esc(state.from)}</strong></div><div class="journey-arrow">${I("arrow")}</div><div><span>TILL</span><strong>${esc(state.to)}</strong></div></div><div class="journey-meta"><span>${I("card")}${dateText()}</span>${full ? `<span>${I("clock")}${esc(state.time)}</span>` : ""}</div>${full && state.departure ? `<div class="selected-departure"><span class="badge ${state.departure.cancelled ? "amber" : "blue"}">${state.departure.cancelled ? "Inställt" : "Försenad · +" + state.departure.delay + " min"}</span><div class="journey-service"><div><span class="journey-service-label">Tågnummer</span><strong>${I("train")} ${esc(state.departure.number)}</strong></div><div><span class="journey-service-label">Planerad ankomst</span><strong>${esc(state.departure.arrival)}</strong></div></div></div>` : ""}</section>`;
       }
 
       function field(id, label, value = "", type = "text", extra = "") {
@@ -612,10 +612,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       ];
       function results() {
         if (!state.from || !state.to || !state.date) return search();
-        return `${back("search", "Ändra sökning")}${head("Välj din avgång", `${demoDepartures.length} avgångar · inställda och försenade`)}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${demoDepartures
+        const visibleDepartures = [
+          ...demoDepartures.filter(r => !r.cancelled).slice(0, 2),
+          ...demoDepartures.filter(r => r.cancelled).slice(0, 2),
+        ];
+        return `${back("search", "Ändra sökning")}${head("Välj din avgång", "2 försenade och 2 inställda avgångar")}${journey(false)}<p class="micro muted" style="margin:14px 0">Exempelavgång för demon · inte liveuppgifter.</p>${visibleDepartures
           .map(
             (r, i) =>
-              `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${i})">Ansök ${I("arrow")}</button></article>`,
+              `<article class="card departure-card"><div class="between"><span class="row">${I("train")}<strong>Tåg ${r.number}</strong></span><span class="badge ${r.cancelled ? "amber" : "blue"}">${r.cancelled ? "Inställt" : "Försenad · +" + r.delay + " min"}</span></div><h3 class="departure-route">${route()}</h3><p class="micro muted">${esc(r.operator)} · ${dateText()}</p><div class="departure-times"><span>Planerad</span><strong>${r.departure} ${I("arrow")} ${r.arrival}</strong></div>${r.cancelled ? "" : `<div class="departure-times"><span>Faktisk</span><strong>${r.actualDeparture} ${I("arrow")} ${r.actualArrival}</strong></div>`}<button class="secondary" aria-label="Ansök för tåg ${r.number}" onclick="selectJourney(${demoDepartures.indexOf(r)})">Ansök ${I("arrow")}</button></article>`,
           )
           .join(
             "",
@@ -1227,19 +1231,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return `<div class="center"><div class="success-symbol">${I("check")}</div>${head("Nu tar vi över.", "Din demoansökan har registrerats. Du kan följa nästa steg under Mina ärenden.")}<span class="badge blue">Ärende #K-1043 · Demo</span></div><div class="card" style="margin-top:28px"><h3 style="margin-bottom:20px">Vad händer nu?</h3><div class="timeline"><div class="milestone complete"><span class="dot"></span><h3>Ansökan registrerad</h3><p>Dina uppgifter och bilagor är samlade.</p></div><div class="milestone"><span class="dot"></span><h3>Operatören granskar</h3><p>Du kan följa status i appen.</p></div><div class="milestone"><span class="dot"></span><h3>Beslut och utbetalning</h3><p>Vid godkännande betalar operatören ut ersättningen.</p></div></div></div><div class="actions">${primary("Följ mitt ärende", "state.detail='new';go('detail')")}<button class="secondary" onclick="go('home')">Till startsidan</button></div><p class="footer-note">Simulerad bekräftelse · inget har skickats</p>`;
       }
       function claimCard(type) {
-        let isNew = type === "new",
-          isPaid = type === "paid";
-        let c = isNew
-          ? state.claim
-          : {
-              from: "Stockholm C",
-              to: isPaid ? "Västerås C" : "Uppsala C",
-              operator: "Mälartåg",
-            };
-        return `<button class="card clickable" onclick="state.detail='${type}';go('detail')"><div class="between"><span class="badge ${isPaid ? "green" : isNew ? "blue" : "amber"}">${isPaid ? "Utbetald" : isNew ? "Registrerad" : "Hos operatören"}</span><span class="micro muted">${isNew ? "24" : isPaid ? "12" : "18"} sep</span></div><div class="route-title">${esc(c.from)} ${I("arrow")} ${esc(c.to)}</div><div class="between small"><span class="muted">${esc(c.operator)} · #K-${isNew ? "1043" : isPaid ? "1028" : "1042"}</span>${isPaid ? "<strong>85 kr</strong>" : I("chevron")}</div></button>`;
+        const c = type === "new" ? state.claim : demoClaimRecord(type === "paid");
+        const status = type === "paid" ? "Avslutat" : type === "active" ? "Pågår" : "Inskickad";
+        return `<button class="card clickable claim-list-card" onclick="state.detail='${type}';go('detail')"><div class="between"><span class="row">${I(type === "paid" ? "check" : "clock")}<span class="badge ${type === "paid" ? "green" : type === "active" ? "amber" : "blue"}">${status}</span></span><span class="micro muted">${esc(c.date)}</span></div><div class="route-title">${esc(c.from)} ${I("arrow")} ${esc(c.to)}</div><div class="between small"><span class="muted">${esc(c.operator)}${type === "missing" ? " · Tåget hittades inte" : ""}</span>${I("chevron")}</div></button>`;
       }
       function cases() {
-        return `${head("Mina ärenden", "Följ din ansökan hela vägen.")}<div class="tabs" role="group" aria-label="Ärendefilter"><button class="${state.filter === "active" ? "active" : ""}" onclick="state.filter='active';render()">Pågående (${state.submitted ? 2 : 1})</button><button class="${state.filter === "paid" ? "active" : ""}" onclick="state.filter='paid';render()">Avslutade (1)</button></div><p class="small muted">Exempelärenden för demonstrationen.</p>${state.filter === "paid" ? claimCard("paid") : (state.submitted ? claimCard("new") : "") + claimCard("active")}`;
+        return `${head("Mina ärenden", "Följ din ansökan hela vägen.")}<div class="tabs" role="group" aria-label="Ärendefilter"><button class="${state.filter === "active" ? "active" : ""}" onclick="state.filter='active';render()">Pågående (${state.submitted ? 4 : 3})</button><button class="${state.filter === "paid" ? "active" : ""}" onclick="state.filter='paid';render()">Avslutade (1)</button></div><p class="small muted">Exempelärenden för demonstrationen.</p>${state.filter === "paid" ? claimCard("paid") : (state.submitted ? claimCard("new") : "") + claimCard("submitted") + claimCard("active") + claimCard("missing")}`;
       }
 
       function newJourney() {
@@ -1266,25 +1263,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         const paid = state.detail === "paid";
         const fresh = state.detail === "new" && state.claim;
         const c = fresh ? state.claim : demoClaimRecord(paid);
+        const missing = state.detail === "missing" || (c.manual && !c.departure);
+        if (state.detail === "missing") { c.departure = null; c.manual = true; }
+        const submitted = fresh || state.detail === "submitted" || state.detail === "missing";
+        const status = paid ? "Avslutat · utbetalt" : submitted ? "Inskickad" : "Pågår";
         const p = c.profile || {};
         const row = (label,value) => summaryRow(label,esc(value || "Ej angivet"));
-        const card = (title,body) => summaryCard(title,"",body);
+        const card = (title,body) => {
+          const icons = {Biljett:"claims",Periodkort:"card",Tåginformation:"train",Personuppgifter:"user",Bankuppgifter:"wallet",Adress:"home","Egna utlägg":"claims",Ärendestatus:"clock"};
+          return `<section class="card claim-info-card"><div class="summary-head"><h3 class="row"><span class="claim-section-icon">${I(icons[title] || "info")}</span>${title}</h3></div>${body}</section>`;
+        };
         const d = c.departure || {};
-        const files = list => (list || []).length ? `<ul class="claim-attachments">${list.map(f=>`<li>${I("claims")}<span>${esc(typeof f === "string" ? f : f.name)}</span></li>`).join("")}</ul>` : '<p class="small muted">Inga bilagor tillagda.</p>';
+        const files = (list,label="Biljettkopia") => (list || []).length ? `<ul class="claim-attachments">${list.map(f=>{const name=typeof f === "string" ? f : f.name;const ext=(name.split(".").pop() || "FIL").toUpperCase();return `<li><span class="attachment-file-icon">${I("claims")}</span><span class="attachment-copy"><strong>${esc(label)}</strong><small>${esc(name)}</small></span><span class="attachment-format">${esc(ext)}</span></li>`;}).join("")}</ul>` : '<p class="attachment-empty">Ingen bilaga tillagd</p>';
         const ticket = c.ticket === "pass"
           ? row("Periodkortstyp",c.pass?.type) + row("Periodkortsnummer",c.pass?.number || c.passNumber) + row("Giltigt till",c.pass?.expiry) + row("Operatör",c.pass?.operator || c.operator)
           : row("Biljettyp",ticketLabel(c)) + row("Biljettnummer",c.ticketNumber) + summaryRow("Biljettpris",money(c.price || 0));
+        const ongoingSummary = !paid && !submitted;
+        const ticketOverview = `<section class="card claim-info-card ongoing-ticket-summary"><div class="summary-head"><h3 class="row"><span class="claim-section-icon">${I("claims")}</span>Din biljett och resa</h3></div><div class="ticket-overview-grid"><div class="summary-row"><span>Biljettyp</span><strong>${esc(ticketLabel(c))}</strong></div><div class="summary-row"><span>Biljettnummer</span><strong>${esc(c.ticketNumber || c.pass?.number || "Ej angivet")}</strong></div><div class="summary-row journey-method"><span>Så genomförde du resan</span><strong>${esc(c.travelMode || "Ej angivet")}</strong></div></div><div class="ticket-document">${files(c.files)}</div></section>`;
         const expenseTotal = (c.expenses || []).reduce((sum,x)=>sum+Number(x.amount || 0),0);
-        return `${back("cases","Mina ärenden")}<div class="between"><span class="eyebrow muted">Ärende #K-${fresh ? "1043" : paid ? "1028" : "1042"}</span><span class="badge ${paid ? "green" : "amber"}">${paid ? "Avslutat · utbetalt" : "Pågår"}</span></div>${head("Ersättningsinformation",esc(c.from)+" → "+esc(c.to))}
-        ${paid ? '<div class="hero"><p>Utbetald ersättning</p><h2>85 kr</h2><p>Utbetalt till konto •••• 4821</p></div>' : `<div class="notice">${I("clock")}<span>${fresh ? "Ansökan är registrerad. Nästa steg är operatörens granskning." : "Operatören granskar din ansökan. Du får besked när ett beslut har fattats."}</span></div>`}
-        ${card(c.ticket === "pass" ? "Periodkort" : "Biljett",ticket + row("Så genomfördes resan",c.travelMode) + '<h4 class="attachment-heading">Biljettkopia</h4>' + files(c.files))}
-        ${card("Tåginformation",row("Avresestation",c.from)+row("Ankomststation",c.to)+row("Avresedatum",c.date)+row("Tågnummer",d.number)+row("Planerad avgångstid",d.departure || c.time)+row("Planerad ankomsttid",d.arrival)+row("Operatör",c.operator)+row("Tågstatus",d.cancelled ? "Inställt" : d.delay ? "Försenat · "+d.delay+" min" : "Manuellt tillagd resa")+(d.actualDeparture ? row("Faktisk avgångstid",d.actualDeparture) : "")+(d.actualArrival ? row("Faktisk ankomsttid",d.actualArrival) : ""))}
+        return `${back("cases","Mina ärenden")}<div class="claim-status-bar"><span class="badge ${paid ? "green" : submitted ? "blue" : "amber"}">${I(paid ? "check" : "clock")} ${status}</span><button class="linkbtn" onclick="downloadClaimPdf()">${I("claims")} Ladda ner PDF</button></div>${head("Ersättningsinformation",esc(c.from)+" → "+esc(c.to))}
+        ${paid ? '<div class="hero"><p>Utbetald ersättning</p><h2>85 kr</h2><p>Utbetalt till konto •••• 4821</p></div>' : `<div class="notice">${I("clock")}<span>${submitted ? "Ansökan är inskickad. Nästa steg är operatörens granskning." : "Operatören granskar din ansökan. Du får besked när ett beslut har fattats."}</span></div>`}
+        ${ongoingSummary ? ticketOverview : submitted && c.ticket !== "pass" ? card("Biljett", `<div class="submitted-ticket-number summary-row"><span>Boknings- eller biljettnummer</span><strong>${esc(c.ticketNumber || "Ej angivet")}</strong></div>`) : card(c.ticket === "pass" ? "Periodkort" : "Biljett",ticket + row("Så genomfördes resan",c.travelMode) + '<div class="ticket-document">' + files(c.files) + '</div>')}
+        ${card("Tåginformation",(missing ? '<div class="notice neutral"><span>Tåget hittades inte. Resan har lagts till manuellt och kontrolleras av operatören.</span></div>' : "")+row("Avresestation",c.from)+row("Ankomststation",c.to)+row("Avresedatum",c.date)+(missing ? "" : row("Tågnummer",d.number))+row("Planerad avgångstid",d.departure || c.time)+(d.arrival ? row("Planerad ankomsttid",d.arrival) : "")+row("Operatör",c.operator)+row("Tågstatus",d.cancelled ? "Inställt" : d.delay ? "Försenat · "+d.delay+" min" : "Manuellt tillagd resa")+(d.actualDeparture ? row("Faktisk avgångstid",d.actualDeparture) : "")+(d.actualArrival ? row("Faktisk ankomsttid",d.actualArrival) : ""))}
         ${card("Personuppgifter",row("Förnamn",(p.name || "").split(" ")[0])+row("Efternamn",(p.name || "").split(" ").slice(1).join(" "))+row("E-postadress",p.email)+row("Mobilnummer",p.phone)+row("Personnummer",p.personalNumber || "98765****"))}
         ${card("Bankuppgifter",row("Kontoinnehavarens namn",p.holder || p.name)+row("Bank",p.bank)+row("Clearingnummer",p.clearing)+row("Kontonummer",p.account ? "•••• "+p.account.replace(/[^0-9]/g,"").slice(-4) : "Ej angivet"))}
         ${card("Adress",row("Gatuadress",p.street || p.address)+row("C/o",p.care || "—")+row("Postnummer",p.postal)+row("Ort",p.city)+row("Land",p.country))}
-        ${card("Egna utlägg",(c.expenses || []).length ? c.expenses.map(x=>`<div class="claim-expense">${summaryRow(esc(x.type),money(x.amount))}<h4 class="attachment-heading">Kvitton</h4>${files(x.files)}</div>`).join("")+summaryRow("Totalt begärt för utlägg",money(expenseTotal)) : '<p class="small muted">Inga egna utlägg i den här ansökan.</p>')}
-        ${card("Ärendestatus",row("Registrerad",c.submittedAt)+row("Status",paid ? "Avslutat – ersättning utbetald" : fresh ? "Registrerad" : "Granskning pågår"))}
+        ${card("Egna utlägg",(c.expenses || []).length ? c.expenses.map(x=>`<div class="claim-expense"><div class="expense-item-heading"><strong>${esc(x.type)}</strong><strong>${money(x.amount)}</strong></div>${files(x.files,"Kvitto")}</div>`).join("")+`<div class="expense-total summary-row"><span>Totalt begärt<small>Egna utlägg</small></span><strong>${money(expenseTotal)}</strong></div>` : '<p class="small muted">Inga egna utlägg i den här ansökan.</p>')}
+        ${card("Ärendestatus",row("Registrerad",c.submittedAt)+row("Status",paid ? "Avslutat – ersättning utbetald" : submitted ? "Inskickad" : "Granskning pågår"))}
         <button class="secondary" onclick="openHelp()">Hjälp med mitt ärende ${I("info")}</button><p class="footer-note">Demoärende · bilagorna visas som filnamn i prototypen.</p>`;
+      }
+      function downloadClaimPdf() {
+        const root = document.getElementById("view");
+        const lines = ["KOMPENSA", "Ersättningsinformation", "Demo - sammanställning av ansökan", ""];
+        root.querySelectorAll(".claim-status-bar .badge, .pagehead p, .hero, .claim-info-card").forEach(el => {
+          if (el.classList.contains("claim-info-card")) {
+            lines.push("", el.querySelector("h3").textContent.trim());
+            el.querySelectorAll(".summary-row, .expense-item-heading, .claim-attachments li, .notice, p").forEach(row => {
+              lines.push((row.classList.contains("summary-row") || row.classList.contains("expense-item-heading")) ? [...row.children].map(x=>x.textContent.trim()).join(": ") : row.textContent.trim());
+            });
+          } else lines.push(el.textContent.trim());
+        });
+        const wrapped = lines.flatMap(line => {
+          const words=line.replace(/\s+/g," ").split(" "); const out=[]; let current="";
+          words.forEach(word=>{if((current+" "+word).length>78){out.push(current);current=word;}else current+=(current?" ":"")+word;});out.push(current);return out;
+        });
+        const pages=[];for(let i=0;i<wrapped.length;i+=42) pages.push(wrapped.slice(i,i+42));
+        const hex = text => [...text].map(c=>(c.charCodeAt(0)<256?c.charCodeAt(0):45).toString(16).padStart(2,"0")).join("");
+        const objects=["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"];
+        const kids=[];
+        pages.forEach((page,index)=>{
+          const pageId=objects.length+1; kids.push(pageId+" 0 R");
+          const content="BT /F1 11 Tf 48 790 Td 17 TL "+page.map((line,i)=>(i?"T* ":"")+"<"+hex(line)+"> Tj").join("\n")+" ET\nBT /F1 9 Tf 48 28 Td <"+hex("Kompensa - Demo | Sida "+(index+1)+" av "+pages.length)+"> Tj ET";
+          objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents "+(pageId+1)+" 0 R >>");
+          objects.push("<< /Length "+content.length+" >>\nstream\n"+content+"\nendstream");
+        });
+        objects[1]="<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+pages.length+" >>";
+        let pdf="%PDF-1.4\n";const offsets=[0];objects.forEach((o,i)=>{offsets.push(pdf.length);pdf+=(i+1)+" 0 obj\n"+o+"\nendobj\n";});
+        const xref=pdf.length;pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n"+offsets.slice(1).map(n=>String(n).padStart(10,"0")+" 00000 n \n").join("")+"trailer\n<< /Size "+(objects.length+1)+" /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+        const url=URL.createObjectURL(new Blob([pdf],{type:"application/pdf"}));const a=document.createElement("a");a.href=url;a.download="Kompensa-ansokan-demo.pdf";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
       }
       function travelPassCard(p = state.pass) {
         return `<section class="travel-pass" aria-label="Sparat periodkort"><div class="travel-pass-top"><span class="operator-seal">${I("train")}</span><div><strong>${esc(p.operator)}</strong><span class="pass-caption">DITT PERIODKORT</span></div><span class="pass-status">${I("check")} Sparat</span></div><div class="travel-pass-body"><span class="pass-caption">RES MER. FYLL I MINDRE.</span><h2>${esc(p.type)}</h2><div class="pass-number-line">${I("card")}<span>${esc(p.number)}</span></div></div><svg class="pass-landscape" viewBox="0 0 360 84" fill="none" aria-hidden="true"><path d="M0 73L45 47L83 61L125 29L180 62L235 35L289 60L330 39L360 59V84H0Z" fill="#ffffff" opacity=".05"/><path d="M0 74H360M0 81H360" stroke="#9cc4e5" stroke-opacity=".3"/><path d="M145 40H288C310 40 324 52 336 68H145Z" fill="#dcecf7"/><path d="M155 46H181V58H155ZM187 46H213V58H187ZM219 46H245V58H219ZM251 46H277V58H251ZM284 46H294C304 46 313 51 319 58H284Z" fill="#41769b"/><path d="M146 63H328" stroke="#b5de83" stroke-width="3"/><circle cx="170" cy="70" r="4" fill="#a6bfd2"/><circle cx="302" cy="70" r="4" fill="#a6bfd2"/><path d="M126 49H108M126 57H92M126 65H114" stroke="#b9d6e9" stroke-opacity=".5" stroke-linecap="round"/></svg><div class="travel-pass-bottom"><span class="expiry-icon">${I("clock")}</span><div><span class="pass-caption">GILTIGT TILL</span><strong>${esc(p.expiry)}</strong></div><span class="pass-ticket-icon">${I("claims")}</span></div></section>`;
